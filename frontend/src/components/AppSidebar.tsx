@@ -22,6 +22,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useTheme } from "@/hooks/use-theme";
+import { Moon, Sun } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -40,6 +43,7 @@ const adminItems = [
 export function AppSidebar() {
   const { open } = useSidebar();
   const { user, isAuthenticated, signOut, isAdmin } = useAuth();
+  const { isDark, toggle } = useTheme();
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -93,6 +97,42 @@ export function AppSidebar() {
         )}
 
         <div className={`mt-auto p-4 border-t ${!open && "px-2"}`}>
+          <div
+            className={`flex items-center justify-between mb-3 ${
+              !open && "justify-center"
+            }`}
+          >
+            {open ? (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  {isDark ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                  <span>Dark mode</span>
+                </div>
+                <Switch
+                  checked={isDark}
+                  onCheckedChange={toggle}
+                  aria-label="Toggle dark mode"
+                />
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggle}
+                aria-label="Toggle dark mode"
+              >
+                {isDark ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
           {isAuthenticated && user ? (
             <div className="space-y-3">
               <div
