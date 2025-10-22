@@ -3,6 +3,11 @@ import { gql } from "graphql-tag";
 export const typeDefs = gql`
   scalar DateTime
 
+  enum UserRole {
+    USER
+    ADMIN
+  }
+
   type Query {
     hello: String
     users: [User!]!
@@ -10,15 +15,17 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    createUser(input: CreateUserInput!): User!
+    createUser(input: CreateUserInput!): AuthResponse!
     updateUser(id: ID!, input: UpdateUserInput!): User!
     deleteUser(id: ID!): Boolean!
+    login(input: LoginInput!): LoginResponse!
   }
 
   type User {
     id: ID!
     email: String!
     username: String!
+    role: UserRole!
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -27,11 +34,32 @@ export const typeDefs = gql`
     email: String!
     username: String!
     password: String!
+    role: UserRole
   }
 
   input UpdateUserInput {
     email: String
     username: String
     password: String
+    role: UserRole
+  }
+
+  input LoginInput {
+    email: String!
+    password: String!
+  }
+
+  type AuthResponse {
+    success: Boolean!
+    message: String!
+    user: User
+    token: String
+  }
+
+  type LoginResponse {
+    success: Boolean!
+    message: String!
+    user: User
+    token: String
   }
 `;
