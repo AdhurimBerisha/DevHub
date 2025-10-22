@@ -1,11 +1,17 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@as-integrations/express4";
+import { createServer } from "http";
 
 import express from "express";
 import cors from "cors";
+import { typeDefs } from "./schema/index.js";
+import { resolvers } from "./resolvers/index.js";
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const httpServer = createServer(app);
+const PORT = process.env.PORT || 4000;
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
@@ -19,24 +25,55 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
+// Initialize Apollo Server
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
 
-app.use(cors());
-app.use(express.json());
+const startServer = async () => {
+  await connectDB();
+  await server.start();
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  app.use(
+    "/graphql",
+    cors<cors.CorsRequest>(),
+    express.json(),
+    expressMiddleware(server, {
+      context: async ({ req }: { req: any }) => ({ prisma }),
+    })
+  );
+
+  // Health check endpoint
+  app.get("/health", (req, res) => {
+    res.json({ status: "OK", timestamp: new Date().toISOString() });
+  });
+
+  await new Promise<void>((resolve) =>
+    httpServer.listen({ port: PORT }, resolve)
+  );
+  console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+  console.log(
+    `📊 GraphQL Playground available at http://localhost:${PORT}/graphql`
+  );
+};
+
+startServer().catch((error) => {
+  console.error("❌ Failed to start server:", error);
+  process.exit(1);
 });
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("🛑 Shutting down gracefully...");
+  await server.stop();
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
   console.log("🛑 Shutting down gracefully...");
+  await server.stop();
   await prisma.$disconnect();
   process.exit(0);
 });
