@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Posts from "./pages/Posts";
+import PostDetail from "./pages/PostDetail";
 import Tags from "./pages/Tags";
 import Communities from "./pages/Communities";
 import Hot from "./pages/Hot";
@@ -36,6 +37,7 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/posts" element={<Posts />} />
+                    <Route path="/post/:id" element={<PostDetail />} />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/communities" element={<Communities />} />
                     <Route path="/hot" element={<Hot />} />
