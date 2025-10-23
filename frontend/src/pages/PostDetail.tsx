@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowBigUp,
   ArrowBigDown,
@@ -6,6 +6,7 @@ import {
   Share2,
   Bookmark,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,55 +14,180 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-
-const post = {
-  title: "Building Scalable React Applications with TypeScript",
-  author: "Sarah Chen",
-  date: "2h ago",
-  content:
-    "# Introduction\n\nBuilding scalable React applications requires careful planning...",
-  tags: ["react", "typescript", "architecture"],
-  reactions: 234,
-  comments: 45,
-};
-
-const comments = [
-  {
-    id: "1",
-    author: "John Doe",
-    date: "1h ago",
-    content: "Great article!",
-    votes: 12,
-  },
-  {
-    id: "2",
-    author: "Jane Smith",
-    date: "45m ago",
-    content: "Would you recommend TypeScript for smaller projects?",
-    votes: 8,
-  },
-];
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_POST_QUERY,
+  ADD_COMMENT_MUTATION,
+  LIKE_POST_MUTATION,
+  UNLIKE_POST_MUTATION,
+} from "@/graphql/posts";
+import { formatDistanceToNow } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function PostDetail() {
+  const { id } = useParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [votes, setVotes] = useState(post.reactions);
-  const [voteState, setVoteState] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [isSaved, setIsSaved] = useState(false);
 
-  const vote = (type) => {
-    if (voteState === type) {
-      setVotes(post.reactions);
-      setVoteState(null);
-    } else {
-      setVotes(
-        post.reactions +
-          (type === "up" ? 1 : -1) +
-          (voteState ? (voteState === "up" ? -1 : 1) : 0)
-      );
-      setVoteState(type);
+  const { loading, error, data } = useQuery(GET_POST_QUERY, {
+    variables: { id },
+    skip: !id,
+    onError: (error) => {
+      console.error("GraphQL Error:", error);
+    },
+  });
+
+  console.log("PostDetail Debug:", {
+    id,
+    loading,
+    error,
+    data,
+    post: data?.post,
+    hasData: !!data,
+    hasPost: !!data?.post,
+  });
+
+  const [addComment] = useMutation(ADD_COMMENT_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+  });
+
+  const [likePost] = useMutation(LIKE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+  });
+
+  const [unlikePost] = useMutation(UNLIKE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+  });
+
+  const handleComment = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to comment on posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await addComment({
+        variables: {
+          input: {
+            postId: id,
+            content: commentText,
+          },
+        },
+      });
+      setCommentText("");
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
     }
   };
+
+  const handleLike = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to like posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const hasLiked = data?.post?.likes?.some(
+        (like) => like.user.id === user.id
+      );
+      if (hasLiked) {
+        await unlikePost({ variables: { postId: id } });
+      } else {
+        await likePost({ variables: { postId: id } });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update like status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/30 p-4">
+        <div className="max-w-5xl mx-auto">
+          <Card className="p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex gap-2">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <Skeleton className="h-40 w-full" />
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-muted/30 p-4">
+        <div className="max-w-5xl mx-auto">
+          <Card className="p-6">
+            <div className="text-red-500">
+              Error loading post: {error.message}
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const post = data?.post;
+
+  // const vote = (type) => {
+  //   if (voteState === type) {
+  //     setVotes(post.reactions);
+  //     setVoteState(null);
+  //   } else {
+  //     setVotes(
+  //       post.reactions +
+  //         (type === "up" ? 1 : -1) +
+  //         (voteState ? (voteState === "up" ? -1 : 1) : 0)
+  //     );
+  //     setVoteState(type);
+  //   }
+  // };
+
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-muted/30 p-4">
+        <div className="max-w-5xl mx-auto">
+          <Card className="p-6">
+            <div className="text-muted-foreground">Post not found</div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const hasLiked = post.likes?.some((like) => like.user.id === user?.id);
 
   return (
     <div className="min-h-screen bg-muted/30 p-4">
@@ -73,34 +199,39 @@ export default function PostDetail() {
         <Card className="p-6">
           <div className="flex gap-4">
             <div className="flex flex-col items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => vote("up")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                disabled={!user}
+              >
                 <ArrowBigUp
-                  fill={voteState === "up" ? "currentColor" : "none"}
+                  className="h-6 w-6"
+                  fill={hasLiked ? "currentColor" : "none"}
                 />
               </Button>
-              <span className="font-bold">{votes}</span>
-              <Button variant="ghost" size="sm" onClick={() => vote("down")}>
-                <ArrowBigDown
-                  fill={voteState === "down" ? "currentColor" : "none"}
-                />
-              </Button>
+              <span className="font-bold">{post.likes.length}</span>
             </div>
 
             <div className="flex-1">
               <div className="text-sm text-muted-foreground mb-2">
-                r/{post.author.split(" ")[0]} • {post.date}
+                Posted by u/{post.author.username} •{" "}
+                {formatDistanceToNow(new Date(post.createdAt))} ago
               </div>
               <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
               <div className="flex gap-2 mb-4">
                 {post.tags.map((tag) => (
-                  <Badge key={tag}>{tag}</Badge>
+                  <Badge key={tag.id}>{tag.name}</Badge>
                 ))}
               </div>
-              <p className="mb-4">{post.content.substring(0, 200)}...</p>
+              <div className="prose dark:prose-invert max-w-none mb-4">
+                {post.content}
+              </div>
 
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm">
-                  <MessageSquare className="h-4 w-4 mr-2" /> {post.comments}
+                  <MessageSquare className="h-4 w-4 mr-2" />{" "}
+                  {post.comments.length}
                 </Button>
                 <Button variant="ghost" size="sm">
                   <Share2 className="h-4 w-4 mr-2" /> Share
@@ -122,43 +253,45 @@ export default function PostDetail() {
 
           <div className="mt-6">
             <h2 className="text-lg font-bold mb-4">
-              Comments ({comments.length})
+              Comments ({post.comments.length})
             </h2>
-            <Textarea
-              placeholder="What are your thoughts?"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              className="mb-2"
-            />
-            <Button size="sm">Comment</Button>
+
+            {user ? (
+              <>
+                <Textarea
+                  placeholder="What are your thoughts?"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  className="mb-2"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleComment}
+                  disabled={!commentText.trim()}
+                >
+                  Comment
+                </Button>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground mb-4">
+                Please login to comment on posts
+              </div>
+            )}
 
             <div className="mt-6 space-y-4">
-              {comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
+              {post.comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {c.author
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                      {comment.author.username[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">
-                      u/{c.author.replace(" ", "").toLowerCase()} • {c.date}
+                      u/{comment.author.username} •{" "}
+                      {formatDistanceToNow(new Date(comment.createdAt))} ago
                     </div>
-                    <p className="text-sm mb-2">{c.content}</p>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
-                        <ArrowBigUp className="h-4 w-4" /> {c.votes}
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <ArrowBigDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        Reply
-                      </Button>
-                    </div>
+                    <p className="text-sm mb-2">{comment.content}</p>
                   </div>
                 </div>
               ))}

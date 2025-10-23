@@ -1,8 +1,5 @@
 import { gql } from "@apollo/client";
 
-// Placeholder for future community-related GraphQL operations
-// Will be populated as you build the communities feature
-
 export const GET_COMMUNITIES_QUERY = gql`
   # TODO: Implement when communities feature is added
   query Placeholder {

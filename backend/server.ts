@@ -10,13 +10,12 @@ import { userTypeDefs } from "./schema/userSchema.js";
 import { userResolver } from "./resolvers/userResolver.js";
 import { postsTypeDefs } from "./schema/postsSchema.js";
 import { postsResolver } from "./resolvers/postsResolver.js";
-import { verifyToken } from "./utils/auth.js";
+import { createAuthMiddleware } from "./middleware/auth.js";
 
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4001;
 
-// Initialize Prisma Client
 const prisma = new PrismaClient();
 
 const connectDB = async () => {
@@ -28,7 +27,6 @@ const connectDB = async () => {
   }
 };
 
-// Initialize Apollo Server
 const server = new ApolloServer({
   typeDefs: [userTypeDefs, postsTypeDefs],
   resolvers: [userResolver, postsResolver],
@@ -38,40 +36,7 @@ const startServer = async () => {
   await connectDB();
   await server.start();
 
-  // Auth middleware: parse Authorization header and attach user to req
-  app.use(async (req: any, _res, next) => {
-    try {
-      const authHeader =
-        req.headers?.authorization || req.headers?.Authorization;
-      if (
-        authHeader &&
-        typeof authHeader === "string" &&
-        authHeader.startsWith("Bearer ")
-      ) {
-        const token = authHeader.split(" ")[1];
-        const payload = verifyToken(token);
-        if (payload && payload.userId) {
-          // fetch user from DB to attach full user object
-          const user = await prisma.user.findUnique({
-            where: { id: payload.userId },
-          });
-          if (user) {
-            // attach minimal user info expected by resolvers
-            req.user = {
-              id: user.id,
-              email: user.email,
-              username: user.username,
-              role: user.role,
-            };
-          }
-        }
-      }
-    } catch (err) {
-      // ignore errors and proceed without user
-      console.error("Error parsing auth token:", err);
-    }
-    next();
-  });
+  app.use(createAuthMiddleware(prisma));
 
   app.use(
     "/graphql",
@@ -85,7 +50,6 @@ const startServer = async () => {
     })
   );
 
-  // Health check endpoint
   app.get("/health", (req, res) => {
     res.json({ status: "OK", timestamp: new Date().toISOString() });
   });
@@ -104,7 +68,6 @@ startServer().catch((error) => {
   process.exit(1);
 });
 
-// Graceful shutdown
 process.on("SIGINT", async () => {
   console.log("🛑 Shutting down gracefully...");
   await server.stop();

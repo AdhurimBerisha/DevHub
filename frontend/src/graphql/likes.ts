@@ -1,8 +1,5 @@
 import { gql } from "@apollo/client";
 
-// Placeholder for future like-related GraphQL operations
-// Will be populated as you build the likes feature
-
 export const LIKE_POST_MUTATION = gql`
   # TODO: Implement when likes feature is added
   query Placeholder {

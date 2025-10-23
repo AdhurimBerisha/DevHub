@@ -54,7 +54,6 @@ export const postsResolver = {
           skip: offset,
         });
 
-        // Map PostTag entries to Tag objects to match GraphQL Post.tags: [Tag]
         return posts.map((p) => ({
           ...p,
           tags: (p.tags as any[]).map((pt) => pt.tag),
@@ -247,7 +246,6 @@ export const postsResolver = {
           },
         });
 
-        // Normalize tags to Tag[] for GraphQL
         const normalizedPost = {
           ...post,
           tags: (post.tags as any[]).map((pt) => pt.tag),
@@ -290,7 +288,6 @@ export const postsResolver = {
           throw new Error("Authentication required");
         }
 
-        // Check if user owns the post or is admin
         const existingPost = await prisma.post.findUnique({
           where: { id },
         });
@@ -477,7 +474,6 @@ export const postsResolver = {
           throw new Error("Authentication required");
         }
 
-        // Check if already liked
         const existingLike = await prisma.like.findUnique({
           where: {
             userId_postId: {

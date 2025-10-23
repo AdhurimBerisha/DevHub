@@ -32,14 +32,12 @@ type AuthStore = AuthState & AuthActions;
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
-      // Initial state
       user: null,
       token: null,
       isLoading: false,
       isAuthenticated: false,
       isAdmin: false,
 
-      // Actions
       setUser: (user) => {
         set({
           user,
@@ -93,4 +91,3 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
-

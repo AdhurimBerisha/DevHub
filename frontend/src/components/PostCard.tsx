@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface PostCardProps {
+  id: string;
   title: string;
   author: string;
   date: string;
@@ -23,6 +24,7 @@ interface PostCardProps {
 }
 
 export function PostCard({
+  id,
   title,
   author,
   date,
@@ -117,7 +119,7 @@ export function PostCard({
 
           <h3
             className="text-lg font-semibold hover:text-primary transition-colors cursor-pointer mb-2"
-            onClick={() => navigate("/post/1")}
+            onClick={() => navigate(`/post/${id}`)}
           >
             {title}
           </h3>
