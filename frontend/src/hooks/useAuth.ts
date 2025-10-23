@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
 import { apolloClient } from "@/lib/apollo";
-import { LOGIN_MUTATION, CREATE_USER_MUTATION } from "@/graphql/mutations";
+import { LOGIN_MUTATION, CREATE_USER_MUTATION } from "@/graphql/auth";
 
 interface LoginResponse {
   login: {
