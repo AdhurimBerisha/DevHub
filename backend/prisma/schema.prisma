@@ -27,5 +27,77 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  posts    Post[]
+  comments Comment[]
+  likes    Like[]
+
   @@map("users")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags        PostTag[]
+  comments    Comment[]
+  likes       Like[]
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("posts")
+}
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  color String?   // Optional color for UI
+  posts PostTag[]
+  createdAt DateTime @default(now())
+
+  @@map("tags")
+}
+
+model PostTag {
+  postId String
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likes     Like[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@map("likes")
 }

@@ -10,6 +10,7 @@ import { apolloClient } from "@/lib/apollo";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Posts from "./pages/Posts";
+import CreatePost from "./pages/CreatePost";
 import PostDetail from "./pages/PostDetail";
 import Tags from "./pages/Tags";
 import Communities from "./pages/Communities";
@@ -39,6 +40,14 @@ const App = () => (
                     <Route path="/" element={<Home />} />
                     <Route path="/posts" element={<Posts />} />
                     <Route path="/post/:id" element={<PostDetail />} />
+                    <Route
+                      path="/create-post"
+                      element={
+                        <ProtectedRoute>
+                          <CreatePost />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/communities" element={<Communities />} />
                     <Route path="/hot" element={<Hot />} />

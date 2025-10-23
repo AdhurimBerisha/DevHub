@@ -32,6 +32,11 @@ import { useAuth } from "@/hooks/useAuth";
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Posts", url: "/posts", icon: FileText },
+  {
+    title: "Create Post",
+    url: "/create-post",
+    icon: () => <FileText className="h-4 w-4 mr-1" />,
+  },
   { title: "Tags", url: "/tags", icon: Tag },
   { title: "Communities", url: "/communities", icon: Users },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
@@ -143,7 +148,7 @@ export function AppSidebar() {
                 }`}
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar} alt={user.username} />
+                  <AvatarImage />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
