@@ -26,7 +26,8 @@ import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/use-theme";
 import { Moon, Sun } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
+import { useAuth } from "@/hooks/useAuth";
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
@@ -42,7 +43,8 @@ const adminItems = [
 
 export function AppSidebar() {
   const { open } = useSidebar();
-  const { user, isAuthenticated, signOut, isAdmin } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuthStore();
+  const { signOut } = useAuth();
   const { isDark, toggle } = useTheme();
 
   return (

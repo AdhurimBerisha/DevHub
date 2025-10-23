@@ -13,51 +13,28 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("signin-email") as string;
     const password = formData.get("signin-password") as string;
 
-    try {
-      const success = await signIn(email, password);
-      if (success) {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-        navigate("/");
-      } else {
-        toast({
-          title: "Sign in failed",
-          description: "Please check your credentials and try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An error occurred during sign in. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const success = await signIn(email, password);
+    if (success) {
+      navigate("/");
     }
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
     const username = formData.get("signup-username") as string;
@@ -71,34 +48,12 @@ export default function Auth() {
         description: "Passwords do not match. Please try again.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
-    try {
-      const success = await signUp(username, email, password);
-      if (success) {
-        toast({
-          title: "Account created!",
-          description:
-            "Welcome to DevBlog! Your account has been created successfully.",
-        });
-        navigate("/");
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: "Please check your information and try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An error occurred during sign up. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const success = await signUp(username, email, password);
+    if (success) {
+      navigate("/");
     }
   };
 

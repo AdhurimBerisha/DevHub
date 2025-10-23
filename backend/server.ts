@@ -6,12 +6,12 @@ import { createServer } from "http";
 
 import express from "express";
 import cors from "cors";
-import { typeDefs } from "./schema/index.js";
-import { resolvers } from "./resolvers/index.js";
+import { userTypeDefs } from "./schema/userSchema.js";
+import { userResolver } from "./resolvers/userResolver.js";
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
@@ -27,8 +27,8 @@ const connectDB = async () => {
 
 // Initialize Apollo Server
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
+  typeDefs: userTypeDefs,
+  resolvers: userResolver,
 });
 
 const startServer = async () => {

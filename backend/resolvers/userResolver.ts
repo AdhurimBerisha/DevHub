@@ -9,7 +9,7 @@ import {
 
 const prisma = new PrismaClient();
 
-export const resolvers = {
+export const userResolver = {
   Query: {
     hello: () => "Hello from GraphQL!",
 
