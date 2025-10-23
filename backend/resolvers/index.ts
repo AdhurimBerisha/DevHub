@@ -1,6 +1,11 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { generateToken, hashPassword, comparePassword } from "../utils/auth";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+  normalizeEmail,
+} from "../utils/validator";
 
 const prisma = new PrismaClient();
 
@@ -12,6 +17,14 @@ export const resolvers = {
       try {
         return prisma.user.findMany({
           orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -21,7 +34,17 @@ export const resolvers = {
 
     user: async (_: unknown, { id }: { id: string }) => {
       try {
-        return prisma.user.findUnique({ where: { id } });
+        return prisma.user.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
       } catch (error) {
         console.error("Error fetching user:", error);
         throw new Error("Failed to fetch user");
@@ -44,26 +67,64 @@ export const resolvers = {
       }
     ) => {
       try {
-        console.log("CreateUser input:", input);
-        const hashedPassword = await bcrypt.hash(input.password, 10);
+        const emailValidation = validateEmail(input.email);
+        if (!emailValidation.isValid) {
+          return {
+            success: false,
+            message: emailValidation.message,
+            user: null,
+            token: null,
+          };
+        }
+
+        const usernameValidation = validateUsername(input.username);
+        if (!usernameValidation.isValid) {
+          return {
+            success: false,
+            message: usernameValidation.message,
+            user: null,
+            token: null,
+          };
+        }
+
+        const passwordValidation = validatePassword(input.password);
+        if (!passwordValidation.isValid) {
+          return {
+            success: false,
+            message: passwordValidation.message,
+            user: null,
+            token: null,
+          };
+        }
+
+        const email = normalizeEmail(input.email);
+
+        const existingUser = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (existingUser) {
+          return {
+            success: false,
+            message: "User with this email already exists",
+            user: null,
+            token: null,
+          };
+        }
+
+        const hashedPassword = await hashPassword(input.password);
         const roleValue = (input.role as "USER" | "ADMIN") || "USER";
-        console.log("Role value being saved:", roleValue);
+
         const user = await prisma.user.create({
           data: {
-            email: input.email,
-            username: input.username,
+            email,
+            username: input.username.trim(),
             password: hashedPassword,
             role: roleValue,
           },
         });
-        console.log("Created user:", user);
 
-        // Generate JWT token
-        const token = jwt.sign(
-          { userId: user.id, email: user.email },
-          process.env.JWT_SECRET || "fallback-secret-key",
-          { expiresIn: "7d" }
-        );
+        const token = generateToken(user.id, user.email, user.role);
 
         return {
           success: true,
@@ -105,19 +166,58 @@ export const resolvers = {
       }
     ) => {
       try {
-        let hashedPassword: string | undefined = undefined;
-        if (input.password) {
-          hashedPassword = await bcrypt.hash(input.password, 10);
+        if (input.email) {
+          const emailValidation = validateEmail(input.email);
+          if (!emailValidation.isValid) {
+            throw new Error(emailValidation.message);
+          }
         }
+
+        if (input.username) {
+          const usernameValidation = validateUsername(input.username);
+          if (!usernameValidation.isValid) {
+            throw new Error(usernameValidation.message);
+          }
+        }
+
+        if (input.password) {
+          const passwordValidation = validatePassword(input.password);
+          if (!passwordValidation.isValid) {
+            throw new Error(passwordValidation.message);
+          }
+        }
+
+        const updateData: any = {};
+
+        if (input.email) {
+          updateData.email = normalizeEmail(input.email);
+        }
+
+        if (input.username) {
+          updateData.username = input.username.trim();
+        }
+
+        if (input.password) {
+          updateData.password = await hashPassword(input.password);
+        }
+
+        if (input.role) {
+          updateData.role = input.role as "USER" | "ADMIN";
+        }
+
         const user = await prisma.user.update({
           where: { id },
-          data: {
-            email: input.email ?? undefined,
-            username: input.username ?? undefined,
-            password: hashedPassword,
-            role: input.role ? (input.role as "USER" | "ADMIN") : undefined,
+          data: updateData,
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
+
         return user;
       } catch (error) {
         console.error("Error updating user:", error);
@@ -140,9 +240,20 @@ export const resolvers = {
       { input }: { input: { email: string; password: string } }
     ) => {
       try {
-        // Find user by email
+        const emailValidation = validateEmail(input.email);
+        if (!emailValidation.isValid) {
+          return {
+            success: false,
+            message: "Invalid email or password",
+            user: null,
+            token: null,
+          };
+        }
+
+        const email = normalizeEmail(input.email);
+
         const user = await prisma.user.findUnique({
-          where: { email: input.email },
+          where: { email },
         });
 
         if (!user) {
@@ -154,11 +265,11 @@ export const resolvers = {
           };
         }
 
-        // Verify password
-        const isValidPassword = await bcrypt.compare(
+        const isValidPassword = await comparePassword(
           input.password,
           user.password
         );
+
         if (!isValidPassword) {
           return {
             success: false,
@@ -168,12 +279,7 @@ export const resolvers = {
           };
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-          { userId: user.id, email: user.email },
-          process.env.JWT_SECRET || "fallback-secret-key",
-          { expiresIn: "7d" }
-        );
+        const token = generateToken(user.id, user.email, user.role);
 
         return {
           success: true,
@@ -192,7 +298,7 @@ export const resolvers = {
         console.error("Error during login:", error);
         return {
           success: false,
-          message: "Login failed",
+          message: "An error occurred during login",
           user: null,
           token: null,
         };
