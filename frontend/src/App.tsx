@@ -16,6 +16,7 @@ import PostDetail from "./pages/PostDetail";
 import Tags from "./pages/Tags";
 import Communities from "./pages/Communities";
 import ManageCommunity from "./pages/ManageCommunity";
+import CommunityDetails from "./pages/CommunityDetails";
 import Hot from "./pages/Hot";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
@@ -60,6 +61,10 @@ const App = () => (
                     />
                     <Route path="/tags" element={<Tags />} />
                     <Route path="/communities" element={<Communities />} />
+                    <Route
+                      path="/communities/:id"
+                      element={<CommunityDetails />}
+                    />
                     <Route
                       path="/communities/:id/manage"
                       element={

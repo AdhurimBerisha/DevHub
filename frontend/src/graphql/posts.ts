@@ -1,9 +1,20 @@
 import { gql } from "@apollo/client";
 
 export const GET_POSTS_QUERY = gql`
-  query GetPosts($limit: Int, $offset: Int, $published: Boolean) {
-    posts(limit: $limit, offset: $offset, published: $published) {
+  query GetPosts(
+    $limit: Int
+    $offset: Int
+    $published: Boolean
+    $communityId: ID
+  ) {
+    posts(
+      limit: $limit
+      offset: $offset
+      published: $published
+      communityId: $communityId
+    ) {
       id
+      communityId
       title
       content
       published
@@ -47,6 +58,7 @@ export const GET_POST_QUERY = gql`
       id
       title
       content
+      communityId
       published
       featured
       viewCount
@@ -98,6 +110,7 @@ export const CREATE_POST_MUTATION = gql`
         id
         title
         content
+        communityId
         published
         featured
         viewCount
@@ -127,6 +140,7 @@ export const UPDATE_POST_MUTATION = gql`
         id
         title
         content
+        communityId
         published
         featured
         viewCount

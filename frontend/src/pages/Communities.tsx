@@ -78,7 +78,12 @@ export default function Communities() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <CardTitle className="text-xl">
-                        {community.name}
+                        <Link
+                          to={`/communities/${community.id}`}
+                          className="hover:underline"
+                        >
+                          {community.name}
+                        </Link>
                       </CardTitle>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

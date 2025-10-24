@@ -6,6 +6,7 @@ export const postsTypeDefs = gql`
     title: String!
     content: String!
     author: User!
+    communityId: ID
     tags: [Tag!]!
     comments: [Comment!]!
     likes: [Like!]!
@@ -47,6 +48,7 @@ export const postsTypeDefs = gql`
     content: String!
     tagIds: [ID!]
     published: Boolean
+    communityId: ID
   }
 
   input UpdatePostInput {
@@ -55,6 +57,7 @@ export const postsTypeDefs = gql`
     tagIds: [ID!]
     published: Boolean
     featured: Boolean
+    communityId: ID
   }
 
   input CreateTagInput {
@@ -86,7 +89,12 @@ export const postsTypeDefs = gql`
   }
 
   extend type Query {
-    posts(limit: Int, offset: Int, published: Boolean): [Post!]!
+    posts(
+      limit: Int
+      offset: Int
+      published: Boolean
+      communityId: ID
+    ): [Post!]!
     post(id: ID!): Post
     tags: [Tag!]!
     tag(id: ID!): Tag

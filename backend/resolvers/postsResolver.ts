@@ -10,11 +10,22 @@ export const postsResolver = {
         limit = 10,
         offset = 0,
         published = true,
-      }: { limit?: number; offset?: number; published?: boolean }
+        communityId,
+      }: {
+        limit?: number;
+        offset?: number;
+        published?: boolean;
+        communityId?: string | number;
+      }
     ) => {
       try {
+        const where: any = {};
+        if (published !== undefined) where.published = published;
+        if (communityId !== undefined && communityId !== null)
+          where.communityId = Number(communityId);
+
         const posts = await prisma.post.findMany({
-          where: { published },
+          where,
           include: {
             author: {
               select: {
@@ -203,6 +214,7 @@ export const postsResolver = {
           content: string;
           tagIds?: string[];
           published?: boolean;
+          communityId?: string | number;
         };
       },
       { user }: { user: any }
@@ -222,6 +234,9 @@ export const postsResolver = {
             content: input.content,
             authorId: user.id,
             published: input.published || false,
+            communityId: input.communityId
+              ? Number(input.communityId)
+              : undefined,
             tags: input.tagIds
               ? {
                   create: input.tagIds.map((tagId) => ({
@@ -279,6 +294,7 @@ export const postsResolver = {
           tagIds?: string[];
           published?: boolean;
           featured?: boolean;
+          communityId?: string | number;
         };
       },
       { user }: { user: any }
@@ -306,6 +322,10 @@ export const postsResolver = {
         if (input.published !== undefined)
           updateData.published = input.published;
         if (input.featured !== undefined) updateData.featured = input.featured;
+        if (input.communityId !== undefined)
+          updateData.communityId = input.communityId
+            ? Number(input.communityId)
+            : null;
 
         const post = await prisma.post.update({
           where: { id },

@@ -9,6 +9,7 @@ import {
   UPDATE_POST_MUTATION,
 } from "@/graphql/posts";
 import { GET_TAGS_QUERY } from "@/graphql/posts";
+import { GET_COMMUNITIES_QUERY } from "@/graphql/communities";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,7 @@ const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
   content: z.string().min(1, "Content is required"),
   tagIds: z.array(z.string()).optional(),
+  communityId: z.string().optional(),
   published: z.boolean().default(false),
 });
 
@@ -50,6 +52,9 @@ export default function CreatePost() {
   const editId = searchParams.get("editId");
 
   const { data: tagsData } = useQuery(GET_TAGS_QUERY);
+  const { data: communitiesData } = useQuery(GET_COMMUNITIES_QUERY, {
+    variables: { limit: 200, offset: 0 },
+  });
   const [createPost] = useMutation<
     { createPost: PostResponse },
     { input: CreatePostInput }
@@ -113,9 +118,14 @@ export default function CreatePost() {
       title: "",
       content: "",
       tagIds: [],
+      communityId: undefined,
       published: false,
     },
   });
+
+  type LocalCreatePostInput = CreatePostInput & {
+    communityId?: string | undefined;
+  };
 
   const { data: postData, loading: postLoading } = useQuery(GET_POST_QUERY, {
     variables: { id: editId },
@@ -129,6 +139,7 @@ export default function CreatePost() {
         title: p.title || "",
         content: p.content || "",
         tagIds: (p.tags || []).map((t: { id: string }) => t.id),
+        communityId: p.communityId ? String(p.communityId) : undefined,
         published: !!p.published,
       });
     }
@@ -146,7 +157,8 @@ export default function CreatePost() {
               content: values.content,
               tagIds: values.tagIds,
               published: values.published,
-            },
+              communityId: values.communityId,
+            } as LocalCreatePostInput,
           },
         });
       } else {
@@ -157,7 +169,8 @@ export default function CreatePost() {
               content: values.content,
               tagIds: values.tagIds,
               published: values.published,
-            },
+              communityId: values.communityId,
+            } as LocalCreatePostInput,
           },
         });
       }
@@ -251,6 +264,38 @@ export default function CreatePost() {
                           onChange={field.onChange}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="communityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community (optional)</FormLabel>
+                      <FormControl>
+                        <select
+                          className="w-full rounded border p-2"
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(e.target.value || undefined)
+                          }
+                        >
+                          <option value="">No community</option>
+                          {communitiesData?.communities?.map(
+                            (c: { id: string; name: string }) => (
+                              <option key={c.id} value={String(c.id)}>
+                                {c.name}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </FormControl>
+                      <FormDescription>
+                        Optionally assign this post to a community.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
