@@ -10,6 +10,8 @@ import { userTypeDefs } from "./schema/userSchema.js";
 import { userResolver } from "./resolvers/userResolver.js";
 import { postsTypeDefs } from "./schema/postsSchema.js";
 import { postsResolver } from "./resolvers/postsResolver.js";
+import { communitiesTypeDefs } from "./schema/communitiesSchema.js";
+import { communitiesResolver } from "./resolvers/communitiesResolver.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 
 const app = express();
@@ -28,8 +30,8 @@ const connectDB = async () => {
 };
 
 const server = new ApolloServer({
-  typeDefs: [userTypeDefs, postsTypeDefs],
-  resolvers: [userResolver, postsResolver],
+  typeDefs: [userTypeDefs, postsTypeDefs, communitiesTypeDefs],
+  resolvers: [userResolver, postsResolver, communitiesResolver],
 });
 
 const startServer = async () => {

@@ -8,6 +8,27 @@ export const GET_COMMUNITIES_QUERY = gql`
       slug
       description
       private
+      isMember
+      memberCount
+      createdAt
+      updatedAt
+      owner {
+        id
+        username
+      }
+    }
+  }
+`;
+
+export const GET_COMMUNITY_QUERY = gql`
+  query GetCommunity($id: ID!) {
+    community(id: $id) {
+      id
+      name
+      slug
+      description
+      private
+      isMember
       memberCount
       createdAt
       updatedAt
