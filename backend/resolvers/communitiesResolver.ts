@@ -175,6 +175,62 @@ export const communitiesResolver = {
         return { success: false, message: "Failed to leave community" };
       }
     },
+    createCommunity: async (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: {
+          name: string;
+          slug: string;
+          description?: string;
+          private?: boolean;
+        };
+      },
+      { user }: { user: any }
+    ) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        const community = await prisma.community.create({
+          data: {
+            name: input.name,
+            slug: input.slug,
+            description: input.description,
+            private: input.private ?? false,
+            ownerId: user.id,
+          },
+          include: {
+            owner: {
+              select: { id: true, username: true, email: true },
+            },
+          },
+        });
+
+        // Make the owner a member as well
+        try {
+          await prisma.communityMember.create({
+            data: { userId: user.id, communityId: community.id, role: "OWNER" },
+          });
+        } catch (e) {
+          // if membership creation fails, continue — community was created
+          console.warn("Failed to create owner membership:", e);
+        }
+
+        return {
+          success: true,
+          message: "Community created",
+          community,
+        } as any;
+      } catch (error: any) {
+        console.error("Error creating community:", error);
+        const message =
+          error?.meta?.cause ?? error?.message ?? "Failed to create community";
+        return { success: false, message };
+      }
+    },
     updateCommunity: async (
       _: unknown,
       {

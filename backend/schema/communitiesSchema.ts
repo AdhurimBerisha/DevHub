@@ -28,11 +28,19 @@ export const communitiesTypeDefs = gql`
     joinCommunity(communityId: ID!): JoinResponse!
     leaveCommunity(communityId: ID!): JoinResponse!
     updateCommunity(id: ID!, input: UpdateCommunityInput!): CommunityResponse!
+    createCommunity(input: CreateCommunityInput!): CommunityResponse!
   }
 
   input UpdateCommunityInput {
     name: String
     slug: String
+    description: String
+    private: Boolean
+  }
+
+  input CreateCommunityInput {
+    name: String!
+    slug: String!
     description: String
     private: Boolean
   }
