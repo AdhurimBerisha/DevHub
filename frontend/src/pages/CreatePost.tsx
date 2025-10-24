@@ -29,6 +29,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
@@ -276,22 +283,26 @@ export default function CreatePost() {
                     <FormItem>
                       <FormLabel>Community (optional)</FormLabel>
                       <FormControl>
-                        <select
-                          className="w-full rounded border p-2"
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(e.target.value || undefined)
+                        <Select
+                          value={field.value ?? "__none"}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__none" ? undefined : val)
                           }
                         >
-                          <option value="">No community</option>
-                          {communitiesData?.communities?.map(
-                            (c: { id: string; name: string }) => (
-                              <option key={c.id} value={String(c.id)}>
-                                {c.name}
-                              </option>
-                            )
-                          )}
-                        </select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No community" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">No community</SelectItem>
+                            {communitiesData?.communities?.map(
+                              (c: { id: string; name: string }) => (
+                                <SelectItem key={c.id} value={String(c.id)}>
+                                  {c.name}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormDescription>
                         Optionally assign this post to a community.
