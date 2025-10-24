@@ -75,7 +75,7 @@ export default function Home() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold">Welcome to DevBlog!</h2>
+                  <h2 className="font-bold">Welcome to DevHub!</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Your home for developer discussions, tutorials, and community
@@ -117,7 +117,7 @@ export default function Home() {
               <CardContent className="p-4">
                 <h2 className="font-bold mb-3">About</h2>
                 <p className="text-sm text-muted-foreground">
-                  DevBlog is a community of developers sharing knowledge,
+                  DevHub is a community of developers sharing knowledge,
                   experiences, and insights about web development.
                 </p>
               </CardContent>

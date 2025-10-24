@@ -61,7 +61,7 @@ export function AppSidebar() {
               !open && "opacity-0"
             }`}
           >
-            DevBlog
+            DevHub
           </h1>
         </div>
 

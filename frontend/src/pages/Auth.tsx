@@ -62,7 +62,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold text-primary">
-            DevBlog
+            DevHub
           </CardTitle>
           <CardDescription>Join the developer community</CardDescription>
         </CardHeader>
