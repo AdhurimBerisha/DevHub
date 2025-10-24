@@ -85,7 +85,7 @@ export default function Home() {
                   <Link to="/create-post">Create Post</Link>
                 </Button>
                 <Button variant="outline" className="w-full">
-                  <Link to="/communities">Create Community</Link>
+                  <Link to="/create-community">Create Community</Link>
                 </Button>
               </CardContent>
             </Card>

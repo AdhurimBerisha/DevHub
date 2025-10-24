@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Posts from "./pages/Posts";
 import CreatePost from "./pages/CreatePost";
+import CreateCommunity from "./pages/CreateCommunity";
 import PostDetail from "./pages/PostDetail";
 import Tags from "./pages/Tags";
 import Communities from "./pages/Communities";
@@ -45,6 +46,14 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <CreatePost />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/create-community"
+                      element={
+                        <ProtectedRoute>
+                          <CreateCommunity />
                         </ProtectedRoute>
                       }
                     />
