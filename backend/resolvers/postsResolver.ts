@@ -228,6 +228,7 @@ export const postsResolver = {
           };
         }
 
+        console.debug("createPost input.tagIds:", input.tagIds);
         const post = await prisma.post.create({
           data: {
             title: input.title,
@@ -237,10 +238,11 @@ export const postsResolver = {
             communityId: input.communityId
               ? Number(input.communityId)
               : undefined,
+            // Create PostTag join rows by connecting existing tags
             tags: input.tagIds
               ? {
                   create: input.tagIds.map((tagId) => ({
-                    tagId,
+                    tag: { connect: { id: tagId } },
                   })),
                 }
               : undefined,
@@ -260,6 +262,8 @@ export const postsResolver = {
             },
           },
         });
+
+        console.debug("created post (raw):", post);
 
         const normalizedPost = {
           ...post,
@@ -335,7 +339,7 @@ export const postsResolver = {
               ? {
                   deleteMany: {},
                   create: input.tagIds.map((tagId) => ({
-                    tagId,
+                    tag: { connect: { id: tagId } },
                   })),
                 }
               : undefined,
@@ -417,12 +421,14 @@ export const postsResolver = {
       { input }: { input: { name: string; color?: string } }
     ) => {
       try {
+        console.debug("createTag input:", input);
         const tag = await prisma.tag.create({
           data: {
             name: input.name,
             color: input.color,
           },
         });
+        console.debug("created tag:", tag);
 
         return {
           success: true,
@@ -433,7 +439,8 @@ export const postsResolver = {
         console.error("Error creating tag:", error);
         return {
           success: false,
-          message: "Failed to create tag",
+          message:
+            error instanceof Error ? error.message : "Failed to create tag",
           tag: null,
         };
       }

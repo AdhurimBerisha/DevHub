@@ -36,7 +36,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { MultiSelect } from "@/components/ui/multi-select";
+// MultiSelect removed in favor of free-text tag input
+import { CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
@@ -130,6 +131,9 @@ export default function CreatePost() {
     },
   });
 
+  const [tagInput, setTagInput] = useState("");
+  const [createTagMutation] = useMutation(CREATE_TAG_MUTATION);
+
   type LocalCreatePostInput = CreatePostInput & {
     communityId?: string | undefined;
   };
@@ -146,40 +150,67 @@ export default function CreatePost() {
         title: p.title || "",
         content: p.content || "",
         tagIds: (p.tags || []).map((t: { id: string }) => t.id),
-        communityId: p.communityId ? String(p.communityId) : undefined,
-        published: !!p.published,
+        // prefill tagInput with tag names for editing
       });
+      setTagInput(
+        (p.tags || []).map((t: { name: string }) => t.name).join(", ")
+      );
+      form.setValue(
+        "communityId",
+        p.communityId ? String(p.communityId) : undefined
+      );
+      form.setValue("published", !!p.published);
     }
   }, [postData, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
+      // Parse tag names from the free-text input (comma separated)
+      const names = tagInput
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      // Map names to tag IDs: use existing tagsData when possible, create missing tags
+      const tagIds: string[] = [];
+      const existingTags = (tagsData?.tags ?? []) as {
+        id: string;
+        name: string;
+      }[];
+
+      for (const name of names) {
+        const found = existingTags.find(
+          (t) => t.name.toLowerCase() === name.toLowerCase()
+        );
+        if (found) {
+          tagIds.push(found.id);
+        } else {
+          // create new tag and push its id
+          try {
+            const res = await createTagMutation({
+              variables: { input: { name, color: null } },
+            });
+            const newTagId = res?.data?.createTag?.tag?.id;
+            if (newTagId) tagIds.push(newTagId);
+          } catch (e) {
+            console.error("Failed to create tag:", name, e);
+          }
+        }
+      }
+
+      const inputPayload = {
+        title: values.title,
+        content: values.content,
+        tagIds: tagIds.length > 0 ? tagIds : undefined,
+        published: values.published,
+        communityId: values.communityId,
+      } as LocalCreatePostInput;
+
       if (editId) {
-        await updatePost({
-          variables: {
-            id: editId,
-            input: {
-              title: values.title,
-              content: values.content,
-              tagIds: values.tagIds,
-              published: values.published,
-              communityId: values.communityId,
-            } as LocalCreatePostInput,
-          },
-        });
+        await updatePost({ variables: { id: editId, input: inputPayload } });
       } else {
-        await createPost({
-          variables: {
-            input: {
-              title: values.title,
-              content: values.content,
-              tagIds: values.tagIds,
-              published: values.published,
-              communityId: values.communityId,
-            } as LocalCreatePostInput,
-          },
-        });
+        await createPost({ variables: { input: inputPayload } });
       }
     } catch (error) {
       setIsSubmitting(false);
@@ -264,13 +295,32 @@ export default function CreatePost() {
                     <FormItem>
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
-                        <MultiSelect
-                          options={tagOptions}
-                          placeholder="Select tags"
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                        <div>
+                          <Input
+                            placeholder="Enter tags, comma separated (e.g. react, typescript)"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                          />
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {tagInput
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean)
+                              .map((name) => (
+                                <span
+                                  key={name}
+                                  className="inline-flex items-center rounded bg-muted px-2 py-1 text-sm"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
                       </FormControl>
+                      <FormDescription>
+                        Type tags separated by commas. New tags will be created
+                        automatically.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
