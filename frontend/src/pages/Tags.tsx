@@ -3,26 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
-import type { Tag } from "@/types/tag";
-
-type LocalTag = Tag & {
-  description?: string | null;
-  count?: number;
-  _count?: { posts?: number };
-};
 import { useQuery, useMutation } from "@apollo/client";
-import { GET_TAGS_QUERY, CREATE_TAG_MUTATION } from "@/graphql/posts";
+import { GET_POPULAR_TAGS, CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { PopularTag, Tag } from "@/types/tag";
 
 export default function Tags() {
-  const { data, loading, error } = useQuery(GET_TAGS_QUERY);
+  const { data, loading, error } = useQuery(GET_POPULAR_TAGS);
   const [createTag, { loading: creating }] = useMutation(CREATE_TAG_MUTATION, {
-    refetchQueries: [{ query: GET_TAGS_QUERY }],
+    refetchQueries: [{ query: GET_POPULAR_TAGS }],
     awaitRefetchQueries: true,
   });
+
   const [name, setName] = useState("");
   const [color, setColor] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const handleCreate = async () => {
@@ -34,12 +30,15 @@ export default function Tags() {
       });
       return;
     }
+
     try {
       const res = await createTag({
         variables: { input: { name: name.trim(), color: color || null } },
       });
+
       const success = res?.data?.createTag?.success ?? false;
       const message = res?.data?.createTag?.message ?? "";
+
       if (success) {
         toast({
           title: "Tag created",
@@ -63,7 +62,11 @@ export default function Tags() {
     }
   };
 
-  const tags = data?.tags ?? [];
+  const popularTags = data?.popularTags ?? [];
+
+  const filteredTags = popularTags.filter((tag: PopularTag) =>
+    tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,38 +80,28 @@ export default function Tags() {
           <div className="flex gap-4 items-center mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search tags..." className="pl-10" />
-            </div>
-            <div className="flex gap-2">
               <Input
-                placeholder="Tag name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="Search tags..."
+                className="pl-10"
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Input
-                placeholder="Color (optional)"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-              />
-              <Button onClick={handleCreate} disabled={creating}>
-                {creating ? "Creating..." : "Create"}
-              </Button>
             </div>
           </div>
+          <h1 className="font-bold text-2xl">Popular Tags🔥:</h1>
         </div>
 
-        {loading ? (
-          <div>Loading tags...</div>
-        ) : error ? (
-          <div className="text-destructive">
-            Failed to load tags: {String(error.message)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tags.map((tag: LocalTag) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div>Loading tags...</div>
+          ) : error ? (
+            <div className="text-destructive">
+              Failed to load tags: {String(error.message)}
+            </div>
+          ) : (
+            filteredTags.map((tag: PopularTag) => (
               <Card
-                key={tag.id ?? tag.name}
-                className="hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-primary"
+                key={tag.id}
+                className="hover:shadow-lg transition-all duration-300  hover:border-primary"
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -116,24 +109,23 @@ export default function Tags() {
                       <Badge
                         variant="secondary"
                         className="text-base px-3 py-1"
+                        style={{
+                          backgroundColor: tag.color || "var(--secondary)",
+                        }}
                       >
                         #{tag.name}
                       </Badge>
                     </CardTitle>
                     <span className="text-sm text-muted-foreground">
-                      {tag._count?.posts ?? tag.count ?? 0} posts
+                      {tag.postCount ?? 0} posts
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {tag.description ?? ""}
-                  </p>
-                </CardContent>
+                <CardContent></CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

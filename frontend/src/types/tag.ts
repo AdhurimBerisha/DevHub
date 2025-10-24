@@ -4,3 +4,7 @@ export interface Tag {
   color?: string;
   createdAt: string;
 }
+
+export interface PopularTag extends Tag {
+  postCount?: number;
+}
