@@ -9,6 +9,22 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { PopularTag, Tag } from "@/types/tag";
 
+function TagSkeleton() {
+  return (
+    <Card className="animate-pulse">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-32 bg-muted rounded" />
+          <div className="h-4 w-16 bg-muted rounded" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="h-4 w-full bg-muted rounded" />
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Tags() {
   const { data, loading, error } = useQuery(GET_POPULAR_TAGS);
   const [createTag, { loading: creating }] = useMutation(CREATE_TAG_MUTATION, {
@@ -92,16 +108,42 @@ export default function Tags() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            <div>Loading tags...</div>
+            // Show 6 skeleton cards while loading
+            <>
+              <TagSkeleton />
+              <TagSkeleton />
+              <TagSkeleton />
+              <TagSkeleton />
+              <TagSkeleton />
+              <TagSkeleton />
+            </>
           ) : error ? (
-            <div className="text-destructive">
-              Failed to load tags: {String(error.message)}
+            <div className="col-span-full">
+              <Card className="border-destructive">
+                <CardContent className="pt-6">
+                  <p className="text-destructive text-center">
+                    Failed to load tags: {String(error.message)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : filteredTags.length === 0 ? (
+            <div className="col-span-full">
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground text-center">
+                    {searchQuery
+                      ? `No tags found matching "${searchQuery}"`
+                      : "No tags available yet"}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           ) : (
             filteredTags.map((tag: PopularTag) => (
               <Card
                 key={tag.id}
-                className="hover:shadow-lg transition-all duration-300  hover:border-primary"
+                className="hover:shadow-lg transition-all duration-300 hover:border-primary"
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
