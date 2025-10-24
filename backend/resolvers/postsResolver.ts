@@ -138,6 +138,29 @@ export const postsResolver = {
       }
     },
 
+    popularTags: async () => {
+      try {
+        const tags = await prisma.tag.findMany({
+          include: {
+            posts: true,
+          },
+        });
+
+        const sorted = tags
+          .map((tag) => ({
+            ...tag,
+            postCount: tag.posts.length,
+          }))
+          .sort((a, b) => b.postCount - a.postCount)
+          .slice(0, 10);
+
+        return sorted;
+      } catch (error) {
+        console.error("Error fetching popular tags:", error);
+        throw new Error("Failed to fetch popular tags");
+      }
+    },
+
     tag: async (_: unknown, { id }: { id: string }) => {
       try {
         const tag = await prisma.tag.findUnique({
@@ -238,7 +261,6 @@ export const postsResolver = {
             communityId: input.communityId
               ? Number(input.communityId)
               : undefined,
-            // Create PostTag join rows by connecting existing tags
             tags: input.tagIds
               ? {
                   create: input.tagIds.map((tagId) => ({
@@ -262,8 +284,6 @@ export const postsResolver = {
             },
           },
         });
-
-        console.debug("created post (raw):", post);
 
         const normalizedPost = {
           ...post,
@@ -421,14 +441,12 @@ export const postsResolver = {
       { input }: { input: { name: string; color?: string } }
     ) => {
       try {
-        console.debug("createTag input:", input);
         const tag = await prisma.tag.create({
           data: {
             name: input.name,
             color: input.color,
           },
         });
-        console.debug("created tag:", tag);
 
         return {
           success: true,

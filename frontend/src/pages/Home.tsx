@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Sparkles } from "lucide-react";
 import { useQuery } from "@apollo/client";
-import { GET_POSTS_QUERY } from "@/graphql/posts";
+import { GET_POPULAR_TAGS, GET_POSTS_QUERY } from "@/graphql/posts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 
@@ -15,6 +15,9 @@ export default function Home() {
       published: true,
     },
   });
+
+  const { data: tagsData, loading: tagsLoading } = useQuery(GET_POPULAR_TAGS);
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -89,26 +92,27 @@ export default function Home() {
                 </Button>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-4">
                 <h2 className="font-bold mb-3">Popular Tags</h2>
                 <div className="space-y-2 text-sm">
-                  {[
-                    "javascript",
-                    "react",
-                    "typescript",
-                    "webdev",
-                    "tutorial",
-                  ].map((tag) => (
-                    <div
-                      key={tag}
-                      className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"
-                    >
-                      <span>#{tag}</span>
-                      <span className="text-muted-foreground">1.2k posts</span>
-                    </div>
-                  ))}
+                  {tagsLoading ? (
+                    <Skeleton className="h-4 w-1/2" />
+                  ) : error ? (
+                    <div className="text-red-500">Error loading tags</div>
+                  ) : (
+                    tagsData?.popularTags.map((tag) => (
+                      <div
+                        key={tag.id}
+                        className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"
+                      >
+                        <span>#{tag.name}</span>
+                        <span className="text-muted-foreground">
+                          {tag.postCount} posts
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

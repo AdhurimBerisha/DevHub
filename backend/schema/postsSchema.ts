@@ -22,6 +22,7 @@ export const postsTypeDefs = gql`
     name: String!
     color: String
     posts: [Post!]!
+    postCount: Int
     createdAt: DateTime!
   }
 
@@ -97,6 +98,7 @@ export const postsTypeDefs = gql`
     ): [Post!]!
     post(id: ID!): Post
     tags: [Tag!]!
+    popularTags: [Tag!]!
     tag(id: ID!): Tag
     comments(postId: ID!): [Comment!]!
   }

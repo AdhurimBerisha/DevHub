@@ -193,6 +193,16 @@ export const CREATE_TAG_MUTATION = gql`
   }
 `;
 
+export const GET_POPULAR_TAGS = gql`
+  query GetPopularTags {
+    popularTags {
+      id
+      name
+      postCount
+    }
+  }
+`;
+
 export const ADD_COMMENT_MUTATION = gql`
   mutation AddComment($input: CreateCommentInput!) {
     addComment(input: $input) {
