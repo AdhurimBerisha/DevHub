@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +21,7 @@ import {
   ADD_COMMENT_MUTATION,
   LIKE_POST_MUTATION,
   UNLIKE_POST_MUTATION,
+  DELETE_POST_MUTATION,
 } from "@/graphql/posts";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -62,6 +64,20 @@ export default function PostDetail() {
 
   const [unlikePost] = useMutation(UNLIKE_POST_MUTATION, {
     refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+  });
+
+  const [deletePostMutation] = useMutation(DELETE_POST_MUTATION, {
+    onCompleted: () => {
+      toast({ title: "Deleted", description: "Post deleted successfully" });
+      navigate("/");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleComment = async () => {
@@ -229,6 +245,37 @@ export default function PostDetail() {
               </div>
 
               <div className="flex gap-2">
+                {/* Edit button visible to author or admins */}
+                {user &&
+                  (user.id === post.author.id || user.role === "ADMIN") && (
+                    <>
+                      <Button asChild size="sm" className="mr-2">
+                        <Link to={`/create-post?editId=${post.id}`}>Edit</Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          if (
+                            !confirm(
+                              "Are you sure you want to delete this post? This cannot be undone."
+                            )
+                          )
+                            return;
+                          try {
+                            await deletePostMutation({
+                              variables: { id: post.id },
+                            });
+                          } catch (e) {
+                            // handled by mutation onError
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  )}
+
                 <Button variant="ghost" size="sm">
                   <MessageSquare className="h-4 w-4 mr-2" />{" "}
                   {post.comments.length}

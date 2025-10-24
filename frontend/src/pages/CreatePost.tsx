@@ -1,9 +1,13 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client";
 import type { Tag } from "@/types/tag";
 import type { CreatePostInput, PostResponse } from "@/types/graphql";
-import { CREATE_POST_MUTATION } from "@/graphql/posts";
+import {
+  CREATE_POST_MUTATION,
+  GET_POST_QUERY,
+  UPDATE_POST_MUTATION,
+} from "@/graphql/posts";
 import { GET_TAGS_QUERY } from "@/graphql/posts";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +46,8 @@ export default function CreatePost() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("editId");
 
   const { data: tagsData } = useQuery(GET_TAGS_QUERY);
   const [createPost] = useMutation<
@@ -74,6 +80,33 @@ export default function CreatePost() {
     },
   });
 
+  const [updatePost] = useMutation(UPDATE_POST_MUTATION, {
+    onCompleted: (data) => {
+      if (data.updatePost.success) {
+        toast({
+          title: "Success",
+          description: "Post updated successfully",
+        });
+        navigate(`/post/${data.updatePost.post.id}`);
+      } else {
+        toast({
+          title: "Error",
+          description: data.updatePost.message,
+          variant: "destructive",
+        });
+      }
+      setIsSubmitting(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    },
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -84,19 +117,50 @@ export default function CreatePost() {
     },
   });
 
+  const { data: postData, loading: postLoading } = useQuery(GET_POST_QUERY, {
+    variables: { id: editId },
+    skip: !editId,
+  });
+
+  useEffect(() => {
+    if (postData?.post) {
+      const p = postData.post;
+      form.reset({
+        title: p.title || "",
+        content: p.content || "",
+        tagIds: (p.tags || []).map((t: { id: string }) => t.id),
+        published: !!p.published,
+      });
+    }
+  }, [postData, form]);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      await createPost({
-        variables: {
-          input: {
-            title: values.title,
-            content: values.content,
-            tagIds: values.tagIds,
-            published: values.published,
+      if (editId) {
+        await updatePost({
+          variables: {
+            id: editId,
+            input: {
+              title: values.title,
+              content: values.content,
+              tagIds: values.tagIds,
+              published: values.published,
+            },
           },
-        },
-      });
+        });
+      } else {
+        await createPost({
+          variables: {
+            input: {
+              title: values.title,
+              content: values.content,
+              tagIds: values.tagIds,
+              published: values.published,
+            },
+          },
+        });
+      }
     } catch (error) {
       setIsSubmitting(false);
     }
@@ -107,13 +171,30 @@ export default function CreatePost() {
       value: tag.id,
       label: tag.name,
     })) || [];
+  if (editId && postLoading) {
+    return (
+      <div className="min-h-screen bg-background py-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <Card>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="h-8 w-1/3 bg-muted/20 rounded" />
+                <div className="h-4 w-1/2 bg-muted/20 rounded" />
+                <div className="h-40 w-full bg-muted/20 rounded" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Create a New Post</CardTitle>
+            <CardTitle>{editId ? "Edit Post" : "Create a New Post"}</CardTitle>
             <CardDescription>
               Share your thoughts, ideas, or knowledge with the community
             </CardDescription>
@@ -207,7 +288,13 @@ export default function CreatePost() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Post"}
+                    {isSubmitting
+                      ? editId
+                        ? "Updating..."
+                        : "Creating..."
+                      : editId
+                      ? "Update Post"
+                      : "Create Post"}
                   </Button>
                 </div>
               </form>
