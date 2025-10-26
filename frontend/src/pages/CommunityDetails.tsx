@@ -138,8 +138,7 @@ export default function CommunityDetails() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Welcome to {community.name}</h1>
-          <p className="text-muted-foreground">{community.description}</p>
+          <h1 className="text-3xl font-bold">{community.name}</h1>
           <div className="text-sm text-muted-foreground mt-2">
             {community.memberCount?.toLocaleString?.() ?? community.memberCount}{" "}
             members
