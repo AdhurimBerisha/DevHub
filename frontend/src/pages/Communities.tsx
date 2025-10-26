@@ -98,7 +98,7 @@ export default function Communities() {
                   community.owner &&
                   currentUser.id === community.owner.id ? (
                     <Link to={`/communities/${community.id}/manage`}>
-                      <Button variant="ghost">Manage</Button>
+                      <Button variant="outline">Manage</Button>
                     </Link>
                   ) : currentUser && community.isMember ? (
                     <Button

@@ -58,6 +58,7 @@ export default function CreatePost() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("editId");
+  const communityIdParam = searchParams.get("communityId");
 
   const { data: tagsData } = useQuery(GET_TAGS_QUERY);
   const { data: communitiesData } = useQuery(GET_COMMUNITIES_QUERY, {
@@ -126,7 +127,7 @@ export default function CreatePost() {
       title: "",
       content: "",
       tagIds: [],
-      communityId: undefined,
+      communityId: communityIdParam ?? undefined,
       published: false,
     },
   });
