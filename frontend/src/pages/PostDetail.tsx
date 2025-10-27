@@ -6,7 +6,6 @@ import {
   Share2,
   Bookmark,
   ArrowLeft,
-  Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -16,17 +15,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import {
   GET_POST_QUERY,
   ADD_COMMENT_MUTATION,
-  LIKE_POST_MUTATION,
-  UNLIKE_POST_MUTATION,
+  VOTE_POST_MUTATION,
   DELETE_POST_MUTATION,
 } from "@/graphql/posts";
-import { formatDistanceToNow } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -38,31 +35,13 @@ export default function PostDetail() {
 
   const { loading, error, data } = useQuery(GET_POST_QUERY, {
     variables: { id },
-    skip: !id,
-    onError: (error) => {
-      console.error("GraphQL Error:", error);
-    },
-  });
-
-  console.log("PostDetail Debug:", {
-    id,
-    loading,
-    error,
-    data,
-    post: data?.post,
-    hasData: !!data,
-    hasPost: !!data?.post,
   });
 
   const [addComment] = useMutation(ADD_COMMENT_MUTATION, {
     refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
   });
 
-  const [likePost] = useMutation(LIKE_POST_MUTATION, {
-    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
-  });
-
-  const [unlikePost] = useMutation(UNLIKE_POST_MUTATION, {
+  const [votePost] = useMutation(VOTE_POST_MUTATION, {
     refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
   });
 
@@ -83,127 +62,62 @@ export default function PostDetail() {
   const handleComment = async () => {
     if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please login to comment on posts",
+        title: "Login required",
+        description: "Please login to comment",
         variant: "destructive",
       });
       return;
     }
-
     try {
       await addComment({
-        variables: {
-          input: {
-            postId: id,
-            content: commentText,
-          },
-        },
+        variables: { input: { postId: id, content: commentText } },
       });
       setCommentText("");
-      toast({
-        title: "Comment added",
-        description: "Your comment has been posted successfully",
-      });
-    } catch (error) {
+      toast({ title: "Comment added" });
+    } catch {
       toast({
         title: "Error",
-        description: "Failed to add comment. Please try again.",
+        description: "Failed to add comment",
         variant: "destructive",
       });
     }
   };
 
-  const handleLike = async () => {
+  const handleVote = async (voteValue: 1 | -1) => {
     if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please login to like posts",
+        title: "Login required",
+        description: "Please login to vote",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const hasLiked = data?.post?.likes?.some(
-        (like) => like.user.id === user.id
-      );
-      if (hasLiked) {
-        await unlikePost({ variables: { postId: id } });
+      const existingVote = post.votes.find((v) => v.user.id === user.id);
+
+      if (existingVote?.value === voteValue) {
+        await votePost({ variables: { postId: id, value: 0 } });
       } else {
-        await likePost({ variables: { postId: id } });
+        await votePost({ variables: { postId: id, value: voteValue } });
       }
-    } catch (error) {
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to update like status. Please try again.",
+        description: err.message,
         variant: "destructive",
       });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-muted/30 p-4">
-        <div className="max-w-5xl mx-auto">
-          <Card className="p-6">
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <div className="flex gap-2">
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-6 w-16" />
-              </div>
-              <Skeleton className="h-40 w-full" />
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-muted/30 p-4">
-        <div className="max-w-5xl mx-auto">
-          <Card className="p-6">
-            <div className="text-red-500">
-              Error loading post: {error.message}
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   const post = data?.post;
+  if (!post) return <div>Post not found</div>;
 
-  // const vote = (type) => {
-  //   if (voteState === type) {
-  //     setVotes(post.reactions);
-  //     setVoteState(null);
-  //   } else {
-  //     setVotes(
-  //       post.reactions +
-  //         (type === "up" ? 1 : -1) +
-  //         (voteState ? (voteState === "up" ? -1 : 1) : 0)
-  //     );
-  //     setVoteState(type);
-  //   }
-  // };
-
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-muted/30 p-4">
-        <div className="max-w-5xl mx-auto">
-          <Card className="p-6">
-            <div className="text-muted-foreground">Post not found</div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const hasLiked = post.likes?.some((like) => like.user.id === user?.id);
+  const userVote = post.votes.find((v) => v.user.id === user?.id);
+  const voteCount = post.votes.reduce((acc, v) => acc + v.value, 0);
 
   return (
     <div className="min-h-screen bg-muted/30 p-4">
@@ -215,18 +129,31 @@ export default function PostDetail() {
         <Card className="p-6">
           <div className="flex gap-4">
             <div className="flex flex-col items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                disabled={!user}
-              >
+              <Button variant="ghost" size="sm" onClick={() => handleVote(1)}>
                 <ArrowBigUp
                   className="h-6 w-6"
-                  fill={hasLiked ? "currentColor" : "none"}
+                  stroke={
+                    userVote?.value === 1
+                      ? "hsl(var(--upvote))"
+                      : "currentColor"
+                  }
+                  fill={userVote?.value === 1 ? "hsl(var(--upvote))" : "none"}
                 />
               </Button>
-              <span className="font-bold">{post.likes.length}</span>
+              <span className="font-bold">{voteCount}</span>
+              <Button variant="ghost" size="sm" onClick={() => handleVote(-1)}>
+                <ArrowBigDown
+                  className="h-6 w-6"
+                  stroke={
+                    userVote?.value === -1
+                      ? "hsl(var(--destructive))"
+                      : "currentColor"
+                  }
+                  fill={
+                    userVote?.value === -1 ? "hsl(var(--destructive))" : "none"
+                  }
+                />
+              </Button>
             </div>
 
             <div className="flex-1">
@@ -244,38 +171,24 @@ export default function PostDetail() {
                 {post.content}
               </div>
 
-              <div className="flex gap-2">
-                {/* Edit button visible to author or admins */}
+              <div className="flex gap-2 mb-4">
                 {user &&
                   (user.id === post.author.id || user.role === "ADMIN") && (
                     <>
-                      <Button asChild size="sm" className="mr-2">
+                      <Button asChild size="sm">
                         <Link to={`/create-post?editId=${post.id}`}>Edit</Link>
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={async () => {
-                          if (
-                            !confirm(
-                              "Are you sure you want to delete this post? This cannot be undone."
-                            )
-                          )
-                            return;
-                          try {
-                            await deletePostMutation({
-                              variables: { id: post.id },
-                            });
-                          } catch (e) {
-                            // handled by mutation onError
-                          }
-                        }}
+                        onClick={() =>
+                          deletePostMutation({ variables: { id: post.id } })
+                        }
                       >
                         Delete
                       </Button>
                     </>
                   )}
-
                 <Button variant="ghost" size="sm">
                   <MessageSquare className="h-4 w-4 mr-2" />{" "}
                   {post.comments.length}
@@ -295,53 +208,43 @@ export default function PostDetail() {
                   {isSaved ? "Saved" : "Save"}
                 </Button>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-6">
-            <h2 className="text-lg font-bold mb-4">
-              Comments ({post.comments.length})
-            </h2>
+              {user && (
+                <>
+                  <Textarea
+                    placeholder="Add a comment"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="mb-2"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleComment}
+                    disabled={!commentText.trim()}
+                  >
+                    Comment
+                  </Button>
+                </>
+              )}
 
-            {user ? (
-              <>
-                <Textarea
-                  placeholder="What are your thoughts?"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="mb-2"
-                />
-                <Button
-                  size="sm"
-                  onClick={handleComment}
-                  disabled={!commentText.trim()}
-                >
-                  Comment
-                </Button>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground mb-4">
-                Please login to comment on posts
-              </div>
-            )}
-
-            <div className="mt-6 space-y-4">
-              {post.comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {comment.author.username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      u/{comment.author.username} •{" "}
-                      {formatDistanceToNow(new Date(comment.createdAt))} ago
+              <div className="mt-6 space-y-4">
+                {post.comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {comment.author.username[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        u/{comment.author.username} •{" "}
+                        {formatDistanceToNow(new Date(comment.createdAt))} ago
+                      </div>
+                      <p className="text-sm">{comment.content}</p>
                     </div>
-                    <p className="text-sm mb-2">{comment.content}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </Card>

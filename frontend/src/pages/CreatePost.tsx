@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client";
-import type { Tag } from "@/types/tag";
+import type { Tag } from "@/types/Types";
 import type { CreatePostInput, PostResponse } from "@/types/graphql";
 import {
   CREATE_POST_MUTATION,
@@ -36,7 +36,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-// MultiSelect removed in favor of free-text tag input
+
 import { CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
@@ -151,7 +151,6 @@ export default function CreatePost() {
         title: p.title || "",
         content: p.content || "",
         tagIds: (p.tags || []).map((t: { id: string }) => t.id),
-        // prefill tagInput with tag names for editing
       });
       setTagInput(
         (p.tags || []).map((t: { name: string }) => t.name).join(", ")
@@ -167,13 +166,11 @@ export default function CreatePost() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Parse tag names from the free-text input (comma separated)
       const names = tagInput
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
 
-      // Map names to tag IDs: use existing tagsData when possible, create missing tags
       const tagIds: string[] = [];
       const existingTags = (tagsData?.tags ?? []) as {
         id: string;
@@ -187,7 +184,6 @@ export default function CreatePost() {
         if (found) {
           tagIds.push(found.id);
         } else {
-          // create new tag and push its id
           try {
             const res = await createTagMutation({
               variables: { input: { name, color: null } },

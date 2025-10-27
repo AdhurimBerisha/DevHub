@@ -8,8 +8,11 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "@apollo/client";
+import { GET_POSTS_QUERY, VOTE_POST_MUTATION } from "@/graphql/posts";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostCardProps {
   id: string;
@@ -17,10 +20,10 @@ interface PostCardProps {
   author: string;
   date: string;
   excerpt: string;
-  tags: string[];
-  reactions: number;
-  comments: number;
-  readTime: string;
+  tags: { id: string; name: string }[];
+  votes: { id: string; value: number; user: { id: string } }[];
+  commentsCount: number;
+  readTime?: string;
 }
 
 export function PostCard({
@@ -30,32 +33,31 @@ export function PostCard({
   date,
   excerpt,
   tags,
-  reactions,
-  comments,
-  readTime,
+  votes,
+  commentsCount,
 }: PostCardProps) {
   const navigate = useNavigate();
-  const [votes, setVotes] = useState(reactions);
-  const [voteState, setVoteState] = useState<"up" | "down" | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const handleUpvote = () => {
-    if (voteState === "up") {
-      setVotes(reactions);
-      setVoteState(null);
-    } else {
-      setVotes(reactions + (voteState === "down" ? 2 : 1));
-      setVoteState("up");
-    }
-  };
+  const userVote = votes?.find((vote) => vote.user.id === user?.id);
+  const voteCount = votes?.reduce((acc, vote) => acc + vote.value, 0) || 0;
 
-  const handleDownvote = () => {
-    if (voteState === "down") {
-      setVotes(reactions);
-      setVoteState(null);
-    } else {
-      setVotes(reactions - (voteState === "up" ? 2 : 1));
-      setVoteState("down");
+  const [votePost] = useMutation(VOTE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POSTS_QUERY }],
+  });
+
+  const handleVote = async (value: number) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to vote",
+        variant: "destructive",
+      });
+      return;
     }
+    const newValue = userVote?.value === value ? 0 : value; // toggle vote
+    await votePost({ variables: { postId: id, value: newValue } });
   };
 
   return (
@@ -63,41 +65,27 @@ export function PostCard({
       <div className="flex gap-0">
         {/* Voting section */}
         <div className="flex flex-col items-center bg-muted/30 py-2 px-3 gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 p-0 hover:bg-background ${
-              voteState === "up" ? "text-[hsl(var(--upvote))]" : ""
-            }`}
-            onClick={handleUpvote}
-          >
+          <Button variant="ghost" size="sm" onClick={() => handleVote(1)}>
             <ArrowBigUp
               className="h-6 w-6"
-              fill={voteState === "up" ? "currentColor" : "none"}
+              stroke={
+                userVote?.value === 1 ? "hsl(var(--upvote))" : "currentColor"
+              }
+              fill={userVote?.value === 1 ? "hsl(var(--upvote))" : "none"}
             />
           </Button>
-          <span
-            className={`text-xs font-bold ${
-              voteState === "up"
-                ? "text-[hsl(var(--upvote))]"
-                : voteState === "down"
-                ? "text-[hsl(var(--downvote))]"
-                : "text-foreground"
-            }`}
-          >
-            {votes}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 p-0 hover:bg-background ${
-              voteState === "down" ? "text-[hsl(var(--downvote))]" : ""
-            }`}
-            onClick={handleDownvote}
-          >
+
+          <span className="text-xs font-bold">{voteCount}</span>
+
+          <Button variant="ghost" size="sm" onClick={() => handleVote(-1)}>
             <ArrowBigDown
               className="h-6 w-6"
-              fill={voteState === "down" ? "currentColor" : "none"}
+              stroke={
+                userVote?.value === -1
+                  ? "hsl(var(--destructive))"
+                  : "currentColor"
+              }
+              fill={userVote?.value === -1 ? "hsl(var(--destructive))" : "none"}
             />
           </Button>
         </div>
@@ -105,14 +93,12 @@ export function PostCard({
         {/* Content section */}
         <div className="flex-1 p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-full bg-gradient-to-br from-primary to-accent" />
-              <span className="font-medium text-foreground hover:underline cursor-pointer">
-                r/{author.split(" ")[0]}
-              </span>
-            </div>
-            <span>•</span>
-            <span>Posted by u/{author.replace(" ", "").toLowerCase()}</span>
+            <span
+              className="font-medium text-foreground hover:underline cursor-pointer"
+              onClick={() => navigate(`/community/${author}`)}
+            >
+              r/{author}
+            </span>
             <span>•</span>
             <span>{date}</span>
           </div>
@@ -131,11 +117,11 @@ export function PostCard({
           <div className="flex flex-wrap gap-2 mb-3">
             {tags.map((tag) => (
               <Badge
-                key={tag}
+                key={tag.id}
                 variant="secondary"
-                className="text-xs font-normal hover:bg-secondary/80 cursor-pointer"
+                className="text-xs font-normal"
               >
-                {tag}
+                {tag.name}
               </Badge>
             ))}
           </div>
@@ -143,7 +129,7 @@ export function PostCard({
           <div className="flex items-center gap-1 text-muted-foreground">
             <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
               <MessageSquare className="h-4 w-4" />
-              {comments} Comments
+              {commentsCount} Comments
             </Button>
             <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
               <Share2 className="h-4 w-4" />
@@ -153,7 +139,6 @@ export function PostCard({
               <Bookmark className="h-4 w-4" />
               Save
             </Button>
-            <span className="ml-auto text-xs">{readTime} read</span>
           </div>
         </div>
       </div>

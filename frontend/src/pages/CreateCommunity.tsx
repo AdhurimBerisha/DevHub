@@ -39,7 +39,6 @@ export default function CreateCommunity() {
 
   const [createCommunity] = useMutation(CREATE_COMMUNITY_MUTATION, {
     onCompleted: (res) => {
-      // backend may return different shape; navigate to communities list for now
       toast({ title: "Success", description: "Community created" });
       setIsSubmitting(false);
       navigate("/communities");

@@ -52,7 +52,6 @@ export default function ManageCommunity() {
     );
   if (!community) return <p className="p-6">Community not found</p>;
 
-  // Only owner can manage
   if (!currentUser || community.owner?.id !== currentUser.id) {
     return <p className="p-6">Not authorized to manage this community.</p>;
   }

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -30,11 +24,11 @@ model User {
   // Relations
   posts    Post[]
   comments Comment[]
-  likes    Like[]
+  votes    Vote[]
 
-  // Add community relations
-  communitiesOwned     Community[] // communities this user owns
-  communityMemberships CommunityMember[] // memberships
+  // Community relations
+  communitiesOwned     Community[]
+  communityMemberships CommunityMember[]
 
   @@map("users")
 }
@@ -47,13 +41,13 @@ model Post {
   author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   tags      PostTag[]
   comments  Comment[]
-  likes     Like[]
+  votes     Vote[]
   published Boolean   @default(false)
   featured  Boolean   @default(false)
   viewCount Int       @default(0)
 
-  // Community relation (optional)
-  communityId Int? // FK matches Community.id (Int)
+  // Community relation
+  communityId Int?
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -62,10 +56,24 @@ model Post {
   @@map("posts")
 }
 
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
 model Tag {
   id        String    @id @default(cuid())
   name      String    @unique
-  color     String? // Optional color for UI
+  color     String?
   posts     PostTag[]
   createdAt DateTime  @default(now())
 
@@ -82,21 +90,7 @@ model PostTag {
   @@map("post_tags")
 }
 
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  likes     Like[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("comments")
-}
-
-model Like {
+model Vote {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -104,11 +98,12 @@ model Like {
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  value     Int      // 1 = upvote, -1 = downvote
   createdAt DateTime @default(now())
 
   @@unique([userId, postId])
   @@unique([userId, commentId])
-  @@map("likes")
+  @@map("votes")
 }
 
 model Community {
@@ -120,7 +115,7 @@ model Community {
   owner       User              @relation(fields: [ownerId], references: [id])
   ownerId     String
   members     CommunityMember[]
-  posts       Post[] // opposite relation to Post.community
+  posts       Post[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }

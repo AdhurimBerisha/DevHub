@@ -20,7 +20,6 @@ export default function Posts() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter posts locally based on title or content
   const filteredPosts = useMemo(() => {
     if (!data?.posts) return [];
     return data.posts.filter(
@@ -91,9 +90,9 @@ export default function Posts() {
                   author={post.author.username}
                   date={new Date(post.createdAt).toLocaleDateString()}
                   excerpt={post.content.substring(0, 150) + "..."}
-                  tags={post.tags.map((tag) => tag.name)}
-                  reactions={post.likes.length}
-                  comments={post.comments.length}
+                  tags={post.tags}
+                  votes={post.votes}
+                  commentsCount={post.comments.length}
                   readTime={`${Math.ceil(
                     post.content.split(" ").length / 200
                   )} min`}

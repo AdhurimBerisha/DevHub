@@ -27,37 +27,18 @@ export const postsResolver = {
         const posts = await prisma.post.findMany({
           where,
           include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-            tags: {
-              include: {
-                tag: true,
-              },
-            },
+            author: { select: { id: true, username: true, email: true } },
+            tags: { include: { tag: true } },
             comments: {
               include: {
-                author: {
-                  select: {
-                    id: true,
-                    username: true,
-                  },
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
                 },
               },
             },
-            likes: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                  },
-                },
-              },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -68,6 +49,8 @@ export const postsResolver = {
         return posts.map((p) => ({
           ...p,
           tags: (p.tags as any[]).map((pt) => pt.tag),
+          likes: p.votes.filter((v: any) => v.value === 1),
+          dislikes: p.votes.filter((v: any) => v.value === -1),
         }));
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -80,37 +63,18 @@ export const postsResolver = {
         const post = await prisma.post.findUnique({
           where: { id },
           include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-            tags: {
-              include: {
-                tag: true,
-              },
-            },
+            author: { select: { id: true, username: true, email: true } },
+            tags: { include: { tag: true } },
             comments: {
               include: {
-                author: {
-                  select: {
-                    id: true,
-                    username: true,
-                  },
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
                 },
               },
             },
-            likes: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                  },
-                },
-              },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
             },
           },
         });
@@ -120,6 +84,8 @@ export const postsResolver = {
         return {
           ...post,
           tags: (post.tags as any[]).map((pt) => pt.tag),
+          likes: post.votes.filter((v: any) => v.value === 1),
+          dislikes: post.votes.filter((v: any) => v.value === -1),
         };
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -129,9 +95,7 @@ export const postsResolver = {
 
     tags: async () => {
       try {
-        return await prisma.tag.findMany({
-          orderBy: { name: "asc" },
-        });
+        return await prisma.tag.findMany({ orderBy: { name: "asc" } });
       } catch (error) {
         console.error("Error fetching tags:", error);
         throw new Error("Failed to fetch tags");
@@ -140,20 +104,11 @@ export const postsResolver = {
 
     popularTags: async () => {
       try {
-        const tags = await prisma.tag.findMany({
-          include: {
-            posts: true,
-          },
-        });
-
+        const tags = await prisma.tag.findMany({ include: { posts: true } });
         const sorted = tags
-          .map((tag) => ({
-            ...tag,
-            postCount: tag.posts.length,
-          }))
+          .map((tag) => ({ ...tag, postCount: tag.posts.length }))
           .sort((a, b) => b.postCount - a.postCount)
           .slice(0, 10);
-
         return sorted;
       } catch (error) {
         console.error("Error fetching popular tags:", error);
@@ -169,14 +124,7 @@ export const postsResolver = {
             posts: {
               include: {
                 post: {
-                  include: {
-                    author: {
-                      select: {
-                        id: true,
-                        username: true,
-                      },
-                    },
-                  },
+                  include: { author: { select: { id: true, username: true } } },
                 },
               },
             },
@@ -184,11 +132,7 @@ export const postsResolver = {
         });
 
         if (!tag) return null;
-
-        return {
-          ...tag,
-          posts: (tag.posts as any[]).map((pt) => pt.post),
-        };
+        return { ...tag, posts: (tag.posts as any[]).map((pt) => pt.post) };
       } catch (error) {
         console.error("Error fetching tag:", error);
         throw new Error("Failed to fetch tag");
@@ -197,28 +141,24 @@ export const postsResolver = {
 
     comments: async (_: unknown, { postId }: { postId: string }) => {
       try {
-        return await prisma.comment.findMany({
+        const comments = await prisma.comment.findMany({
           where: { postId },
           include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-              },
-            },
-            likes: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                  },
-                },
-              },
+            author: { select: { id: true, username: true } },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
             },
           },
           orderBy: { createdAt: "desc" },
         });
+
+        return comments.map((c) => ({
+          ...c,
+          votes: c.votes,
+          likes: c.votes.filter((v: any) => v.value === 1),
+          dislikes: c.votes.filter((v: any) => v.value === -1),
+          voteCount: c.votes.reduce((sum: number, v: any) => sum + v.value, 0),
+        }));
       } catch (error) {
         console.error("Error fetching comments:", error);
         throw new Error("Failed to fetch comments");
@@ -242,16 +182,14 @@ export const postsResolver = {
       },
       { user }: { user: any }
     ) => {
-      try {
-        if (!user) {
-          return {
-            success: false,
-            message: "Authentication required",
-            post: null,
-          };
-        }
+      if (!user)
+        return {
+          success: false,
+          message: "Authentication required",
+          post: null,
+        };
 
-        console.debug("createPost input.tagIds:", input.tagIds);
+      try {
         const post = await prisma.post.create({
           data: {
             title: input.title,
@@ -270,38 +208,19 @@ export const postsResolver = {
               : undefined,
           },
           include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-            tags: {
-              include: {
-                tag: true,
-              },
-            },
+            author: { select: { id: true, username: true, email: true } },
+            tags: { include: { tag: true } },
           },
         });
-
-        const normalizedPost = {
-          ...post,
-          tags: (post.tags as any[]).map((pt) => pt.tag),
-        };
 
         return {
           success: true,
           message: "Post created successfully",
-          post: normalizedPost,
+          post: { ...post, tags: (post.tags as any[]).map((pt) => pt.tag) },
         };
       } catch (error) {
         console.error("Error creating post:", error);
-        return {
-          success: false,
-          message: "Failed to create post",
-          post: null,
-        };
+        return { success: false, message: "Failed to create post", post: null };
       }
     },
 
@@ -323,34 +242,24 @@ export const postsResolver = {
       },
       { user }: { user: any }
     ) => {
+      if (!user) throw new Error("Authentication required");
+
+      const existingPost = await prisma.post.findUnique({ where: { id } });
+      if (!existingPost) throw new Error("Post not found");
+      if (existingPost.authorId !== user.id && user.role !== "ADMIN")
+        throw new Error("Not authorized to update this post");
+
+      const updateData: any = {};
+      if (input.title) updateData.title = input.title;
+      if (input.content) updateData.content = input.content;
+      if (input.published !== undefined) updateData.published = input.published;
+      if (input.featured !== undefined) updateData.featured = input.featured;
+      if (input.communityId !== undefined)
+        updateData.communityId = input.communityId
+          ? Number(input.communityId)
+          : null;
+
       try {
-        if (!user) {
-          throw new Error("Authentication required");
-        }
-
-        const existingPost = await prisma.post.findUnique({
-          where: { id },
-        });
-
-        if (!existingPost) {
-          throw new Error("Post not found");
-        }
-
-        if (existingPost.authorId !== user.id && user.role !== "ADMIN") {
-          throw new Error("Not authorized to update this post");
-        }
-
-        const updateData: any = {};
-        if (input.title) updateData.title = input.title;
-        if (input.content) updateData.content = input.content;
-        if (input.published !== undefined)
-          updateData.published = input.published;
-        if (input.featured !== undefined) updateData.featured = input.featured;
-        if (input.communityId !== undefined)
-          updateData.communityId = input.communityId
-            ? Number(input.communityId)
-            : null;
-
         const post = await prisma.post.update({
           where: { id },
           data: {
@@ -365,39 +274,19 @@ export const postsResolver = {
               : undefined,
           },
           include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-            tags: {
-              include: {
-                tag: true,
-              },
-            },
+            author: { select: { id: true, username: true, email: true } },
+            tags: { include: { tag: true } },
           },
         });
-
-        const normalizedPost = {
-          ...post,
-          tags: (post.tags as any[]).map((pt) => pt.tag),
-        };
 
         return {
           success: true,
           message: "Post updated successfully",
-          post: normalizedPost,
+          post: { ...post, tags: (post.tags as any[]).map((pt) => pt.tag) },
         };
       } catch (error) {
         console.error("Error updating post:", error);
-        return {
-          success: false,
-          message:
-            error instanceof Error ? error.message : "Failed to update post",
-          post: null,
-        };
+        return { success: false, message: "Failed to update post", post: null };
       }
     },
 
@@ -406,33 +295,19 @@ export const postsResolver = {
       { id }: { id: string },
       { user }: { user: any }
     ) => {
+      if (!user) throw new Error("Authentication required");
+
+      const existingPost = await prisma.post.findUnique({ where: { id } });
+      if (!existingPost) throw new Error("Post not found");
+      if (existingPost.authorId !== user.id && user.role !== "ADMIN")
+        throw new Error("Not authorized to delete this post");
+
       try {
-        if (!user) {
-          throw new Error("Authentication required");
-        }
-
-        const existingPost = await prisma.post.findUnique({
-          where: { id },
-        });
-
-        if (!existingPost) {
-          throw new Error("Post not found");
-        }
-
-        if (existingPost.authorId !== user.id && user.role !== "ADMIN") {
-          throw new Error("Not authorized to delete this post");
-        }
-
-        await prisma.post.delete({
-          where: { id },
-        });
-
+        await prisma.post.delete({ where: { id } });
         return true;
       } catch (error) {
         console.error("Error deleting post:", error);
-        throw new Error(
-          error instanceof Error ? error.message : "Failed to delete post"
-        );
+        throw new Error("Failed to delete post");
       }
     },
 
@@ -442,25 +317,12 @@ export const postsResolver = {
     ) => {
       try {
         const tag = await prisma.tag.create({
-          data: {
-            name: input.name,
-            color: input.color,
-          },
+          data: { name: input.name, color: input.color },
         });
-
-        return {
-          success: true,
-          message: "Tag created successfully",
-          tag,
-        };
+        return { success: true, message: "Tag created successfully", tag };
       } catch (error) {
         console.error("Error creating tag:", error);
-        return {
-          success: false,
-          message:
-            error instanceof Error ? error.message : "Failed to create tag",
-          tag: null,
-        };
+        return { success: false, message: "Failed to create tag", tag: null };
       }
     },
 
@@ -469,31 +331,22 @@ export const postsResolver = {
       { input }: { input: { content: string; postId: string } },
       { user }: { user: any }
     ) => {
-      try {
-        if (!user) {
-          return {
-            success: false,
-            message: "Authentication required",
-            comment: null,
-          };
-        }
+      if (!user)
+        return {
+          success: false,
+          message: "Authentication required",
+          comment: null,
+        };
 
+      try {
         const comment = await prisma.comment.create({
           data: {
             content: input.content,
-            authorId: user.id,
             postId: input.postId,
+            authorId: user.id,
           },
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-              },
-            },
-          },
+          include: { author: { select: { id: true, username: true } } },
         });
-
         return {
           success: true,
           message: "Comment added successfully",
@@ -509,66 +362,72 @@ export const postsResolver = {
       }
     },
 
-    likePost: async (
+    votePost: async (
       _: unknown,
-      { postId }: { postId: string },
+      { postId, value }: { postId: string; value: number },
       { user }: { user: any }
     ) => {
+      if (!user) throw new Error("Authentication required");
+      if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
+
       try {
-        if (!user) {
-          throw new Error("Authentication required");
-        }
-
-        const existingLike = await prisma.like.findUnique({
-          where: {
-            userId_postId: {
-              userId: user.id,
-              postId,
-            },
-          },
+        let vote;
+        const existingVote = await prisma.vote.findUnique({
+          where: { userId_postId: { userId: user.id, postId } },
         });
 
-        if (existingLike) {
-          throw new Error("Post already liked");
+        if (existingVote) {
+          if (value === 0) {
+            await prisma.vote.delete({ where: { id: existingVote.id } });
+          } else {
+            vote = await prisma.vote.update({
+              where: { id: existingVote.id },
+              data: { value },
+              include: { user: { select: { id: true, username: true } } },
+            });
+          }
+        } else if (value !== 0) {
+          vote = await prisma.vote.create({
+            data: { userId: user.id, postId, value },
+            include: { user: { select: { id: true, username: true } } },
+          });
         }
 
-        await prisma.like.create({
-          data: {
-            userId: user.id,
-            postId,
-          },
-        });
-
-        return true;
+        return vote;
       } catch (error) {
-        console.error("Error liking post:", error);
-        throw new Error(
-          error instanceof Error ? error.message : "Failed to like post"
-        );
+        console.error("Error voting post:", error);
+        throw new Error("Failed to vote post");
       }
     },
 
-    unlikePost: async (
+    voteComment: async (
       _: unknown,
-      { postId }: { postId: string },
+      { commentId, value }: { commentId: string; value: number },
       { user }: { user: any }
     ) => {
+      if (!user) throw new Error("Authentication required");
+      if (![1, -1].includes(value)) throw new Error("Invalid vote value");
+
       try {
-        if (!user) {
-          throw new Error("Authentication required");
-        }
-
-        await prisma.like.deleteMany({
-          where: {
-            userId: user.id,
-            postId,
-          },
+        const existingVote = await prisma.vote.findUnique({
+          where: { userId_commentId: { userId: user.id, commentId } },
         });
-
+        if (existingVote) {
+          if (existingVote.value === value)
+            await prisma.vote.delete({ where: { id: existingVote.id } });
+          else
+            await prisma.vote.update({
+              where: { id: existingVote.id },
+              data: { value },
+            });
+        } else
+          await prisma.vote.create({
+            data: { userId: user.id, commentId, value },
+          });
         return true;
       } catch (error) {
-        console.error("Error unliking post:", error);
-        throw new Error("Failed to unlike post");
+        console.error("Error voting comment:", error);
+        throw new Error("Failed to vote comment");
       }
     },
   },

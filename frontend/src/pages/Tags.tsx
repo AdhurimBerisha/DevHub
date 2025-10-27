@@ -7,7 +7,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { GET_POPULAR_TAGS, CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { PopularTag } from "@/types/tag";
+import { PopularTag } from "@/types/Types";
 import { Link } from "react-router-dom";
 
 function TagSkeleton() {

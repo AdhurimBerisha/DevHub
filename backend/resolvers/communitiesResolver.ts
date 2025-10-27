@@ -10,7 +10,6 @@ export const communitiesResolver = {
       { user }: { user: any }
     ) => {
       try {
-        // Use Prisma _count to get member counts efficiently
         const communities = await prisma.community.findMany({
           include: {
             owner: {
@@ -29,7 +28,6 @@ export const communitiesResolver = {
           skip: offset,
         });
 
-        // If there is a user, fetch membership rows for all returned communities in one query
         let memberSet = new Set<number>();
         if (user) {
           const ids = communities.map((c) => c.id);
@@ -122,7 +120,6 @@ export const communitiesResolver = {
           return { success: false, message: "Community not found" };
         }
 
-        // Check existing membership using compound unique
         const existing = await prisma.communityMember.findUnique({
           where: {
             userId_communityId: {
@@ -209,13 +206,11 @@ export const communitiesResolver = {
           },
         });
 
-        // Make the owner a member as well
         try {
           await prisma.communityMember.create({
             data: { userId: user.id, communityId: community.id, role: "OWNER" },
           });
         } catch (e) {
-          // if membership creation fails, continue — community was created
           console.warn("Failed to create owner membership:", e);
         }
 

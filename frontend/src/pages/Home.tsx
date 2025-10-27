@@ -6,14 +6,14 @@ import { useQuery } from "@apollo/client";
 import { GET_POPULAR_TAGS, GET_POSTS_QUERY } from "@/graphql/posts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { PopularTag, Post } from "@/types/Types";
 
 export default function Home() {
+  const { user } = useAuth();
+
   const { loading, error, data } = useQuery(GET_POSTS_QUERY, {
-    variables: {
-      limit: 4,
-      offset: 0,
-      published: true,
-    },
+    variables: { limit: 4, offset: 0, published: true },
   });
 
   const { data: tagsData, loading: tagsLoading } = useQuery(GET_POPULAR_TAGS);
@@ -21,7 +21,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Header */}
         <div className="mb-6">
           <Button asChild className="gap-2 rounded-full">
             <Link to="/create-post">
@@ -32,14 +31,12 @@ export default function Home() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main content */}
           <div className="lg:col-span-2 space-y-4">
             {loading ? (
-              // Show skeletons while loading
               Array(4)
                 .fill(null)
-                .map((_, index) => (
-                  <div key={index} className="p-6 border rounded-lg space-y-4">
+                .map((_, idx) => (
+                  <div key={idx} className="p-6 border rounded-lg space-y-4">
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
                     <div className="flex gap-2">
@@ -53,7 +50,7 @@ export default function Home() {
                 Error loading posts: {error.message}
               </div>
             ) : (
-              data?.posts.map((post) => (
+              data?.posts.map((post: Post) => (
                 <PostCard
                   key={post.id}
                   id={post.id}
@@ -61,18 +58,14 @@ export default function Home() {
                   author={post.author.username}
                   date={new Date(post.createdAt).toLocaleDateString()}
                   excerpt={post.content.substring(0, 150) + "..."}
-                  tags={post.tags.map((tag) => tag.name)}
-                  reactions={post.likes.length}
-                  comments={post.comments.length}
-                  readTime={`${Math.ceil(
-                    post.content.split(" ").length / 200
-                  )} min`}
+                  tags={post.tags}
+                  votes={post.votes}
+                  commentsCount={post.comments.length}
                 />
               ))
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
@@ -92,16 +85,15 @@ export default function Home() {
                 </Button>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-4">
                 <h2 className="font-bold mb-3">Popular Tags</h2>
                 <div className="space-y-2 text-sm">
                   {tagsLoading ? (
                     <Skeleton className="h-4 w-1/2" />
-                  ) : error ? (
-                    <div className="text-red-500">Error loading tags</div>
                   ) : (
-                    tagsData?.popularTags.map((tag) => (
+                    tagsData?.popularTags.map((tag: PopularTag) => (
                       <div
                         key={tag.id}
                         className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"

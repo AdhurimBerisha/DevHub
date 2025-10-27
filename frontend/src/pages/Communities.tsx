@@ -52,7 +52,6 @@ export default function Communities() {
     }
   );
 
-  // ✅ Search filter includes name and description
   const filteredCommunities = communities.filter(
     (community) =>
       community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

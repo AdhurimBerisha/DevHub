@@ -1,5 +1,7 @@
 import { gql } from "@apollo/client";
 
+// ================== Queries ==================
+
 export const GET_POSTS_QUERY = gql`
   query GetPosts(
     $limit: Int
@@ -40,9 +42,18 @@ export const GET_POSTS_QUERY = gql`
           id
           username
         }
+        votes {
+          id
+          value
+          user {
+            id
+            username
+          }
+        }
       }
-      likes {
+      votes {
         id
+        value
         user {
           id
           username
@@ -82,16 +93,18 @@ export const GET_POST_QUERY = gql`
           id
           username
         }
-        likes {
+        votes {
           id
+          value
           user {
             id
             username
           }
         }
       }
-      likes {
+      votes {
         id
+        value
         user {
           id
           username
@@ -100,6 +113,8 @@ export const GET_POST_QUERY = gql`
     }
   }
 `;
+
+// ================== Mutations ==================
 
 export const CREATE_POST_MUTATION = gql`
   mutation CreatePost($input: CreatePostInput!) {
@@ -125,6 +140,14 @@ export const CREATE_POST_MUTATION = gql`
           id
           name
           color
+        }
+        votes {
+          id
+          value
+          user {
+            id
+            username
+          }
         }
       }
     }
@@ -156,6 +179,14 @@ export const UPDATE_POST_MUTATION = gql`
           name
           color
         }
+        votes {
+          id
+          value
+          user {
+            id
+            username
+          }
+        }
       }
     }
   }
@@ -166,6 +197,47 @@ export const DELETE_POST_MUTATION = gql`
     deletePost(id: $id)
   }
 `;
+
+export const ADD_COMMENT_MUTATION = gql`
+  mutation AddComment($input: CreateCommentInput!) {
+    addComment(input: $input) {
+      success
+      message
+      comment {
+        id
+        content
+        createdAt
+        author {
+          id
+          username
+        }
+        votes {
+          id
+          value
+          user {
+            id
+            username
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const VOTE_POST_MUTATION = gql`
+  mutation VotePost($postId: ID!, $value: Int!) {
+    votePost(postId: $postId, value: $value) {
+      id
+      value
+      user {
+        id
+        username
+      }
+    }
+  }
+`;
+
+// ================== Tags ==================
 
 export const GET_TAGS_QUERY = gql`
   query GetTags {
@@ -200,35 +272,5 @@ export const GET_POPULAR_TAGS = gql`
       name
       postCount
     }
-  }
-`;
-
-export const ADD_COMMENT_MUTATION = gql`
-  mutation AddComment($input: CreateCommentInput!) {
-    addComment(input: $input) {
-      success
-      message
-      comment {
-        id
-        content
-        createdAt
-        author {
-          id
-          username
-        }
-      }
-    }
-  }
-`;
-
-export const LIKE_POST_MUTATION = gql`
-  mutation LikePost($postId: ID!) {
-    likePost(postId: $postId)
-  }
-`;
-
-export const UNLIKE_POST_MUTATION = gql`
-  mutation UnlikePost($postId: ID!) {
-    unlikePost(postId: $postId)
   }
 `;

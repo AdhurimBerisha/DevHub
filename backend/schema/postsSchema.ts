@@ -9,12 +9,35 @@ export const postsTypeDefs = gql`
     communityId: ID
     tags: [Tag!]!
     comments: [Comment!]!
-    likes: [Like!]!
+    votes: [Vote!]! # all votes
+    voteCount: Int! # computed as sum of vote values
     published: Boolean!
     featured: Boolean!
     viewCount: Int!
     createdAt: DateTime!
     updatedAt: DateTime!
+  }
+
+  type Comment {
+    id: ID!
+    content: String!
+    author: User!
+    post: Post!
+    votes: [Vote!]! # all votes
+    voteCount: Int! # computed sum of vote values
+    likes: [Vote!]! # votes with value = 1
+    dislikes: [Vote!]! # votes with value = -1
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  type Vote {
+    id: ID!
+    user: User!
+    value: Int! # +1 = upvote, -1 = downvote
+    post: Post
+    comment: Comment
+    createdAt: DateTime!
   }
 
   type Tag {
@@ -23,24 +46,6 @@ export const postsTypeDefs = gql`
     color: String
     posts: [Post!]!
     postCount: Int
-    createdAt: DateTime!
-  }
-
-  type Comment {
-    id: ID!
-    content: String!
-    author: User!
-    post: Post!
-    likes: [Like!]!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-  }
-
-  type Like {
-    id: ID!
-    user: User!
-    post: Post
-    comment: Comment
     createdAt: DateTime!
   }
 
@@ -113,9 +118,9 @@ export const postsTypeDefs = gql`
     addComment(input: CreateCommentInput!): CommentResponse!
     updateComment(id: ID!, content: String!): CommentResponse!
     deleteComment(id: ID!): Boolean!
-    likePost(postId: ID!): Boolean!
-    unlikePost(postId: ID!): Boolean!
-    likeComment(commentId: ID!): Boolean!
-    unlikeComment(commentId: ID!): Boolean!
+
+    # New vote mutations
+    votePost(postId: ID!, value: Int!): Vote!
+    voteComment(commentId: ID!, value: Int!): Vote!
   }
 `;
