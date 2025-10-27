@@ -210,13 +210,35 @@ export const postsResolver = {
           include: {
             author: { select: { id: true, username: true, email: true } },
             tags: { include: { tag: true } },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
+            },
+            comments: {
+              include: {
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
+                },
+              },
+            },
           },
         });
+
+        const mappedPost = {
+          ...post,
+          tags: (post.tags as any[]).map((pt) => pt.tag),
+          likes: post.votes.filter((v: any) => v.value === 1),
+          dislikes: post.votes.filter((v: any) => v.value === -1),
+          voteCount: post.votes.reduce(
+            (sum: number, v: any) => sum + v.value,
+            0
+          ),
+        };
 
         return {
           success: true,
           message: "Post created successfully",
-          post: { ...post, tags: (post.tags as any[]).map((pt) => pt.tag) },
+          post: mappedPost,
         };
       } catch (error) {
         console.error("Error creating post:", error);
