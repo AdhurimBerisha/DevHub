@@ -32,14 +32,15 @@ import { useAuth } from "@/hooks/useAuth";
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Posts", url: "/posts", icon: FileText },
+
+  { title: "Tags", url: "/tags", icon: Tag },
+  { title: "Communities", url: "/communities", icon: Users },
+  { title: "What's Hot", url: "/hot", icon: TrendingUp },
   {
     title: "Create Post",
     url: "/create-post",
     icon: () => <FileText className="h-4 w-4 mr-1" />,
   },
-  { title: "Tags", url: "/tags", icon: Tag },
-  { title: "Communities", url: "/communities", icon: Users },
-  { title: "What's Hot", url: "/hot", icon: TrendingUp },
 ];
 
 const adminItems = [
