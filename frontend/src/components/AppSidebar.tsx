@@ -10,6 +10,7 @@ import {
   User,
   Moon,
   Sun,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -41,6 +42,7 @@ const mainItems = [
     url: "/create-post",
     icon: FileText,
   },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 const adminItems = [

@@ -127,7 +127,7 @@ export default function Profile() {
                         rows={3}
                       />
                     </div>
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
@@ -138,7 +138,7 @@ export default function Profile() {
                         }
                         placeholder="your@email.com"
                       />
-                    </div>
+                    </div> */}
                     <div className="space-y-2">
                       <Label htmlFor="location">Location</Label>
                       <Input
