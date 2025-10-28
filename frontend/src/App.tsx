@@ -21,6 +21,7 @@ import Hot from "./pages/Hot";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
                     <Route path="/" element={<Home />} />
                     <Route path="/posts" element={<Posts />} />
                     <Route path="/post/:id" element={<PostDetail />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route
                       path="/create-post"
                       element={

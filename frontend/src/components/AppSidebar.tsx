@@ -8,6 +8,8 @@ import {
   LogIn,
   LogOut,
   User,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -23,23 +25,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useTheme } from "@/hooks/use-theme";
-import { Moon, Sun } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Posts", url: "/posts", icon: FileText },
-
   { title: "Tags", url: "/tags", icon: Tag },
   { title: "Communities", url: "/communities", icon: Users },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
   {
     title: "Create Post",
     url: "/create-post",
-    icon: () => <FileText className="h-4 w-4 mr-1" />,
+    icon: FileText,
   },
 ];
 
@@ -56,6 +56,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
+        {/* Logo */}
         <div className="px-6 py-4 border-b">
           <h1
             className={`font-bold text-xl text-primary transition-opacity ${
@@ -66,6 +67,7 @@ export function AppSidebar() {
           </h1>
         </div>
 
+        {/* Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -84,6 +86,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Admin */}
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel>Admin</SidebarGroupLabel>
@@ -104,7 +107,9 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
+        {/* Footer Section */}
         <div className={`mt-auto p-4 border-t ${!open && "px-2"}`}>
+          {/* Theme Toggle */}
           <div
             className={`flex items-center justify-between mb-3 ${
               !open && "justify-center"
@@ -141,19 +146,23 @@ export function AppSidebar() {
               </Button>
             )}
           </div>
+
+          {/* Auth Section */}
           {isAuthenticated && user ? (
             <div className="space-y-3">
-              <div
-                className={`flex items-center gap-3 ${
+              {/* Clickable profile */}
+              <NavLink
+                to="/profile"
+                className={`flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors ${
                   !open && "justify-center"
                 }`}
               >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage />
+                {/* <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatarUrl || ""} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
-                </Avatar>
+                </Avatar> */}
                 {open && (
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
@@ -164,7 +173,9 @@ export function AppSidebar() {
                     </p>
                   </div>
                 )}
-              </div>
+              </NavLink>
+
+              {/* Sign Out */}
               <Button
                 onClick={signOut}
                 variant="outline"
