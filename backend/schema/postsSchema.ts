@@ -121,6 +121,6 @@ export const postsTypeDefs = gql`
 
     # New vote mutations
     votePost(postId: ID!, value: Int!): Vote!
-    voteComment(commentId: ID!, value: Int!): Vote!
+    voteComment(commentId: ID!, value: Int!): Vote
   }
 `;

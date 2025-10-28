@@ -274,3 +274,16 @@ export const GET_POPULAR_TAGS = gql`
     }
   }
 `;
+
+export const VOTE_COMMENT_MUTATION = gql`
+  mutation VoteComment($commentId: ID!, $value: Int!) {
+    voteComment(commentId: $commentId, value: $value) {
+      id
+      value
+      user {
+        id
+        username
+      }
+    }
+  }
+`;

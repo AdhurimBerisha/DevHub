@@ -367,8 +367,14 @@ export const postsResolver = {
             postId: input.postId,
             authorId: user.id,
           },
-          include: { author: { select: { id: true, username: true } } },
+          include: {
+            author: { select: { id: true, username: true } },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
+            },
+          },
         });
+
         return {
           success: true,
           message: "Comment added successfully",
@@ -428,25 +434,35 @@ export const postsResolver = {
       { user }: { user: any }
     ) => {
       if (!user) throw new Error("Authentication required");
-      if (![1, -1].includes(value)) throw new Error("Invalid vote value");
+      if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
 
       try {
         const existingVote = await prisma.vote.findUnique({
           where: { userId_commentId: { userId: user.id, commentId } },
+          include: { user: { select: { id: true, username: true } } },
         });
+
+        if (existingVote && existingVote.value === value) {
+          await prisma.vote.delete({ where: { id: existingVote.id } });
+          return null;
+        }
+
         if (existingVote) {
-          if (existingVote.value === value)
-            await prisma.vote.delete({ where: { id: existingVote.id } });
-          else
-            await prisma.vote.update({
-              where: { id: existingVote.id },
-              data: { value },
-            });
-        } else
-          await prisma.vote.create({
-            data: { userId: user.id, commentId, value },
+          return await prisma.vote.update({
+            where: { id: existingVote.id },
+            data: { value },
+            include: { user: { select: { id: true, username: true } } },
           });
-        return true;
+        }
+
+        if (value !== 0) {
+          return await prisma.vote.create({
+            data: { userId: user.id, commentId, value },
+            include: { user: { select: { id: true, username: true } } },
+          });
+        }
+
+        return null;
       } catch (error) {
         console.error("Error voting comment:", error);
         throw new Error("Failed to vote comment");
