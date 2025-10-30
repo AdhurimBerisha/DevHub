@@ -2,13 +2,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { GET_POPULAR_TAGS, CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { PopularTag } from "@/types/Types";
 import { Link } from "react-router-dom";
+import { Pagination } from "@/components/Pagination";
 
 function TagSkeleton() {
   return (
@@ -33,14 +34,27 @@ export default function Tags() {
     awaitRefetchQueries: true,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const popularTags = data?.popularTags ?? [];
 
   const filteredTags = popularTags.filter((tag: PopularTag) =>
     tag.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Reset page to 1 whenever search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedTags = filteredTags.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredTags.length / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +95,7 @@ export default function Tags() {
                   </CardContent>
                 </Card>
               </div>
-            ) : filteredTags.length === 0 ? (
+            ) : paginatedTags.length === 0 ? (
               <div className="col-span-full">
                 <Card>
                   <CardContent className="pt-6">
@@ -94,7 +108,7 @@ export default function Tags() {
                 </Card>
               </div>
             ) : (
-              filteredTags.map((tag: PopularTag) => (
+              paginatedTags.map((tag: PopularTag) => (
                 <Card
                   key={tag.id}
                   className="hover:shadow-lg transition-all duration-300 hover:border-primary"
@@ -156,6 +170,14 @@ export default function Tags() {
             </Card>
           </div>
         </div>
+
+        {/* Pagination */}
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
