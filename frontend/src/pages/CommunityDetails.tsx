@@ -21,8 +21,9 @@ interface Post {
   content: string;
   createdAt: string;
   author: { id: string; username: string };
+  community?: { id: string; name: string; slug: string } | null;
   tags: { id: string; name: string }[];
-  likes: { id: string; user: { id: string; username: string } }[];
+  votes: { id: string; value: number; user: { id: string } }[];
   comments: {
     id: string;
     content: string;
@@ -162,12 +163,10 @@ export default function CommunityDetails() {
                   author={post.author.username}
                   date={new Date(post.createdAt).toLocaleDateString()}
                   excerpt={post.content.substring(0, 150) + "..."}
-                  tags={post.tags.map((tag) => tag.name)}
-                  reactions={post.likes.length}
-                  comments={post.comments.length}
-                  readTime={`${Math.ceil(
-                    post.content.split(" ").length / 200
-                  )} min`}
+                  tags={post.tags}
+                  votes={post.votes}
+                  commentsCount={post.comments.length}
+                  community={post.community}
                 />
               ))
             )}
