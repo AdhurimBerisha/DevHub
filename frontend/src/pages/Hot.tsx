@@ -3,7 +3,9 @@ import { GET_POSTS_QUERY } from "@/graphql/posts";
 import { PostCard } from "@/components/PostCard";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Flame } from "lucide-react";
+import { useState } from "react";
 import type { Post } from "@/types/Types";
+import { Pagination } from "@/components/Pagination";
 
 export default function Hot() {
   const { data, loading, error } = useQuery<{ posts: Post[] }>(
@@ -13,14 +15,24 @@ export default function Hot() {
     }
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 4;
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading posts</p>;
 
+  // Sort posts by likes
   const sortedPosts = [...(data?.posts ?? [])].sort(
     (a, b) =>
       (b.votes.filter((v) => v.value === 1).length || 0) -
       (a.votes.filter((v) => v.value === 1).length || 0)
   );
+
+  // Pagination logic
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = sortedPosts.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,11 +64,8 @@ export default function Hot() {
         </div>
 
         <div className="grid gap-6">
-          {sortedPosts.map((post, index) => (
+          {paginatedPosts.map((post, index) => (
             <div key={post.id} className="relative">
-              {/* <div className="absolute -left-2 top-4 w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-sm">
-                {index + 1}
-              </div> */}
               <PostCard
                 id={post.id}
                 title={post.title}
@@ -70,6 +79,12 @@ export default function Hot() {
             </div>
           ))}
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
