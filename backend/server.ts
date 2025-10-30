@@ -46,6 +46,25 @@ const server = new ApolloServer({
       ...communitiesResolver.Mutation,
       ...adminResolver.Mutation,
     },
+    Post: {
+      community: async (post: any) => {
+        if (!post.communityId) {
+          console.log("Post has no communityId:", post.id);
+          return null;
+        }
+        try {
+          const community = await prisma.community.findUnique({
+            where: { id: post.communityId },
+            select: { id: true, name: true, slug: true },
+          });
+          console.log("Fetched community for post:", post.id, community);
+          return community;
+        } catch (error) {
+          console.error("Error fetching community for post:", error);
+          return null;
+        }
+      },
+    },
   },
 });
 

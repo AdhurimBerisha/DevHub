@@ -6,6 +6,7 @@ export const postsTypeDefs = gql`
     title: String!
     content: String!
     author: User!
+    community: Community
     communityId: ID
     tags: [Tag!]!
     comments: [Comment!]!

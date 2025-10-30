@@ -222,6 +222,17 @@ export default function PostDetail() {
 
             {/* ======= POST BODY ======= */}
             <div className="flex-1">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                {post.community && (
+                  <Badge 
+                    variant="outline"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                    onClick={() => navigate(`/community/${post.community.slug}`)}
+                  >
+                    c/{post.community.name}
+                  </Badge>
+                )}
+              </div>
               <div className="text-sm text-muted-foreground mb-2">
                 Posted by u/{post.author.username} •{" "}
                 {formatDistanceToNow(new Date(post.createdAt))} ago

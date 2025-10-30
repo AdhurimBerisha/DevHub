@@ -29,6 +29,11 @@ export const GET_POSTS_QUERY = gql`
         username
         email
       }
+      community {
+        id
+        name
+        slug
+      }
       tags {
         id
         name
@@ -79,6 +84,11 @@ export const GET_POST_QUERY = gql`
         id
         username
         email
+      }
+      community {
+        id
+        name
+        slug
       }
       tags {
         id
@@ -136,6 +146,11 @@ export const CREATE_POST_MUTATION = gql`
           username
           email
         }
+        community {
+          id
+          name
+          slug
+        }
         tags {
           id
           name
@@ -173,6 +188,11 @@ export const UPDATE_POST_MUTATION = gql`
           id
           username
           email
+        }
+        community {
+          id
+          name
+          slug
         }
         tags {
           id

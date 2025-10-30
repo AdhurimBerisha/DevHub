@@ -28,7 +28,7 @@ export default function Posts() {
 
   const filteredAndSortedPosts = useMemo(() => {
     if (!data?.posts) return [];
-    
+
     const filtered = data.posts.filter(
       (post) =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,6 +111,7 @@ export default function Posts() {
                   readTime={`${Math.ceil(
                     post.content.split(" ").length / 200
                   )} min`}
+                  community={post.community}
                 />
               ))
             ) : (

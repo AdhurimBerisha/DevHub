@@ -24,6 +24,7 @@ interface PostCardProps {
   votes: { id: string; value: number; user: { id: string } }[];
   commentsCount: number;
   readTime?: string;
+  community?: { id: string; name: string; slug: string } | null;
 }
 
 export function PostCard({
@@ -35,6 +36,7 @@ export function PostCard({
   tags,
   votes,
   commentsCount,
+  community,
 }: PostCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -92,11 +94,19 @@ export function PostCard({
 
         {/* Content section */}
         <div className="flex-1 p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-            <span
-              className="font-medium text-foreground hover:underline cursor-pointer"
-              onClick={() => navigate(`/community/${author}`)}
-            >
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {community && (
+              <Badge 
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => navigate(`/community/${community.slug}`)}
+              >
+                c/{community.name}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 flex-wrap">
+            <span className="font-medium text-foreground hover:underline">
               r/{author}
             </span>
             <span>•</span>
