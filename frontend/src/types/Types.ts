@@ -28,4 +28,5 @@ export interface Post {
   tags: { id: string; name: string }[];
   votes: Vote[];
   comments: { id: string }[];
+  published: boolean;
 }

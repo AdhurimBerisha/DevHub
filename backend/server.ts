@@ -13,6 +13,8 @@ import { postsResolver } from "./resolvers/postsResolver.js";
 import { communitiesTypeDefs } from "./schema/communitiesSchema.js";
 import { communitiesResolver } from "./resolvers/communitiesResolver.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { adminResolver } from "./resolvers/adminResolver.js";
+import { adminTypeDefs } from "./schema/adminSchema.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -30,17 +32,19 @@ const connectDB = async () => {
 };
 
 const server = new ApolloServer({
-  typeDefs: [userTypeDefs, postsTypeDefs, communitiesTypeDefs],
+  typeDefs: [userTypeDefs, postsTypeDefs, communitiesTypeDefs, adminTypeDefs],
   resolvers: {
     Query: {
       ...userResolver.Query,
       ...postsResolver.Query,
       ...communitiesResolver.Query,
+      ...adminResolver.Query,
     },
     Mutation: {
       ...userResolver.Mutation,
       ...postsResolver.Mutation,
       ...communitiesResolver.Mutation,
+      ...adminResolver.Mutation,
     },
   },
 });
