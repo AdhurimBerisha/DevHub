@@ -50,6 +50,28 @@ export const userResolver = {
         throw new Error("Failed to fetch user");
       }
     },
+    currentUser: async (_: unknown, __: unknown, context: { user: any }) => {
+      if (!context.user) {
+        throw new Error("Not authenticated");
+      }
+
+      try {
+        return await prisma.user.findUnique({
+          where: { id: context.user.id },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        throw new Error("Failed to fetch user profile");
+      }
+    },
   },
 
   Mutation: {

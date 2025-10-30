@@ -11,11 +11,13 @@ export const postsResolver = {
         offset = 0,
         published = true,
         communityId,
+        authorId,
       }: {
         limit?: number;
         offset?: number;
         published?: boolean;
         communityId?: string | number;
+        authorId?: string;
       }
     ) => {
       try {
@@ -23,6 +25,7 @@ export const postsResolver = {
         if (published !== undefined) where.published = published;
         if (communityId !== undefined && communityId !== null)
           where.communityId = Number(communityId);
+        if (authorId) where.authorId = authorId;
 
         const posts = await prisma.post.findMany({
           where,

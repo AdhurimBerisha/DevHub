@@ -12,6 +12,22 @@ export const userTypeDefs = gql`
     hello: String
     users: [User!]!
     user(id: ID!): User
+    currentUser: User
+  }
+
+  extend type Query {
+    posts(
+      limit: Int
+      offset: Int
+      published: Boolean
+      communityId: ID
+      authorId: ID # ✅ add this line
+    ): [Post!]!
+    post(id: ID!): Post
+    tags: [Tag!]!
+    popularTags: [Tag!]!
+    tag(id: ID!): Tag
+    comments(postId: ID!): [Comment!]!
   }
 
   type Mutation {

@@ -31,7 +31,18 @@ const connectDB = async () => {
 
 const server = new ApolloServer({
   typeDefs: [userTypeDefs, postsTypeDefs, communitiesTypeDefs],
-  resolvers: [userResolver, postsResolver, communitiesResolver],
+  resolvers: {
+    Query: {
+      ...userResolver.Query,
+      ...postsResolver.Query,
+      ...communitiesResolver.Query,
+    },
+    Mutation: {
+      ...userResolver.Mutation,
+      ...postsResolver.Mutation,
+      ...communitiesResolver.Mutation,
+    },
+  },
 });
 
 const startServer = async () => {

@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
+import { useApolloClient } from "@apollo/client"; // ✅ added
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
@@ -37,11 +37,7 @@ const mainItems = [
   { title: "Tags", url: "/tags", icon: Tag },
   { title: "Communities", url: "/communities", icon: Users },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
-  {
-    title: "Create Post",
-    url: "/create-post",
-    icon: FileText,
-  },
+  { title: "Create Post", url: "/create-post", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -54,6 +50,12 @@ export function AppSidebar() {
   const { user, isAuthenticated, isAdmin } = useAuthStore();
   const { signOut } = useAuth();
   const { isDark, toggle } = useTheme();
+  const client = useApolloClient(); // ✅ get apollo client
+
+  const handleSignOut = async () => {
+    await client.clearStore(); // ✅ clears Apollo cache
+    signOut();
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -109,7 +111,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Footer Section */}
+        {/* Footer */}
         <div className={`mt-auto p-4 border-t ${!open && "px-2"}`}>
           {/* Theme Toggle */}
           <div
@@ -127,19 +129,10 @@ export function AppSidebar() {
                   )}
                   <span>Dark mode</span>
                 </div>
-                <Switch
-                  checked={isDark}
-                  onCheckedChange={toggle}
-                  aria-label="Toggle dark mode"
-                />
+                <Switch checked={isDark} onCheckedChange={toggle} />
               </>
             ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggle}
-                aria-label="Toggle dark mode"
-              >
+              <Button variant="ghost" size="icon" onClick={toggle}>
                 {isDark ? (
                   <Moon className="h-4 w-4" />
                 ) : (
@@ -152,19 +145,13 @@ export function AppSidebar() {
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div className="space-y-3">
-              {/* Clickable profile */}
+              {/* Profile Link */}
               <NavLink
                 to="/profile"
                 className={`flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors ${
                   !open && "justify-center"
                 }`}
               >
-                {/* <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatarUrl || ""} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar> */}
                 {open && (
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
@@ -177,9 +164,9 @@ export function AppSidebar() {
                 )}
               </NavLink>
 
-              {/* Sign Out */}
+              {/* Logout */}
               <Button
-                onClick={signOut}
+                onClick={handleSignOut}
                 variant="outline"
                 className="w-full"
                 size={open ? "default" : "icon"}

@@ -61,3 +61,27 @@ export const GET_USER_QUERY = gql`
     }
   }
 `;
+
+export const GET_USER_POSTS = gql`
+  query GetUserPosts($authorId: ID!) {
+    posts(authorId: $authorId) {
+      id
+      title
+      content
+      createdAt
+      viewCount
+      tags {
+        tag {
+          id
+          name
+        }
+      }
+      votes {
+        value
+      }
+      comments {
+        id
+      }
+    }
+  }
+`;

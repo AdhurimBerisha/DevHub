@@ -16,7 +16,6 @@ export default function Hot() {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading posts</p>;
 
-  // Compute likes and sort by upvotes
   const sortedPosts = [...(data?.posts ?? [])].sort(
     (a, b) =>
       (b.votes.filter((v) => v.value === 1).length || 0) -
