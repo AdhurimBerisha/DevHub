@@ -61,6 +61,7 @@ export default function Home() {
                   tags={post.tags}
                   votes={post.votes}
                   commentsCount={post.comments.length}
+                  community={post.community}
                 />
               ))
             )}

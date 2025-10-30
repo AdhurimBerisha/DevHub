@@ -18,6 +18,12 @@ export interface Vote {
   };
 }
 
+export interface Community {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Post {
   id: string;
   title: string;
@@ -26,6 +32,7 @@ export interface Post {
   author: {
     username: string;
   };
+  community?: Community | null;
   tags: { id: string; name: string }[];
   votes: Vote[];
   comments: { id: string }[];
