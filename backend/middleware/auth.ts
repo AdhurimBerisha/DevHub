@@ -30,6 +30,8 @@ export function createAuthMiddleware(prisma: PrismaClient): RequestHandler {
       }
     } catch (err) {
       console.error("Auth middleware error:", err);
+      console.log("Auth header:", req.headers.authorization);
+      console.log("User after verify:", req.user);
     }
     next();
   };

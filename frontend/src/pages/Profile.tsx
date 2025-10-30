@@ -15,6 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
+import { Pagination } from "@/components/Pagination";
+
+const POSTS_PER_PAGE = 5;
 
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
@@ -67,21 +70,20 @@ export default function Profile() {
     username: "",
     email: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const navigate = useNavigate();
 
   const {
     loading: userLoading,
     error: userError,
     data: userData,
-  } = useQuery(GET_CURRENT_USER, {
-    fetchPolicy: "network-only", // 👈 ensures latest user data
-  });
-
-  const navigate = useNavigate();
+  } = useQuery(GET_CURRENT_USER, { fetchPolicy: "network-only" });
 
   const { loading: postsLoading, data: postsData } = useQuery(GET_USER_POSTS, {
     variables: { authorId: userData?.currentUser?.id },
     skip: !userData?.currentUser?.id,
-    fetchPolicy: "network-only", // 👈 ensures latest posts
+    fetchPolicy: "network-only",
   });
 
   const [updateUser] = useMutation(UPDATE_USER, {
@@ -90,7 +92,6 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       await updateUser({
         variables: {
@@ -101,13 +102,12 @@ export default function Profile() {
           },
         },
       });
-
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
       setOpen(false);
-      await client.refetchQueries({ include: "active" }); // ✅ refresh after update
+      await client.refetchQueries({ include: "active" });
     } catch (error) {
       toast({
         title: "Update failed",
@@ -117,20 +117,18 @@ export default function Profile() {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
     });
-  };
 
-  const formatPostDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatPostDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       month: "2-digit",
       day: "2-digit",
       year: "numeric",
     });
-  };
 
   const calculateStats = () => {
     const posts = postsData?.posts || [];
@@ -197,9 +195,16 @@ export default function Profile() {
   const stats = calculateStats();
   const userPosts = postsData?.posts || [];
 
+  // Pagination logic
+  const totalPages = Math.ceil(userPosts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = userPosts.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl p-6">
+        {/* Profile Card */}
         <Card className="mb-6 overflow-hidden border-border bg-card">
           <div className="h-32 bg-gradient-to-r from-primary/20 to-accent/20"></div>
           <div className="px-6 pb-6">
@@ -208,17 +213,12 @@ export default function Profile() {
                 <User className="h-16 w-16" />
               </div>
 
-              {/* Edit Dialog */}
               <Dialog
                 open={open}
                 onOpenChange={(isOpen) => {
                   setOpen(isOpen);
-                  if (isOpen) {
-                    setFormData({
-                      username: user.username,
-                      email: user.email,
-                    });
-                  }
+                  if (isOpen)
+                    setFormData({ username: user.username, email: user.email });
                 }}
               >
                 <DialogTrigger asChild>
@@ -320,7 +320,7 @@ export default function Profile() {
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : userPosts.length === 0 ? (
+          ) : paginatedPosts.length === 0 ? (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground">
                 No posts yet. Start sharing your thoughts!
@@ -328,7 +328,7 @@ export default function Profile() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {userPosts.map((post) => {
+              {paginatedPosts.map((post) => {
                 const likes =
                   post.votes?.filter((v) => v.value === 1).length || 0;
                 const comments = post.comments?.length || 0;
@@ -356,6 +356,15 @@ export default function Profile() {
                 );
               })}
             </div>
+          )}
+
+          {/* Pagination */}
+          {userPosts.length > POSTS_PER_PAGE && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           )}
         </div>
       </div>

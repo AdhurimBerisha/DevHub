@@ -93,7 +93,7 @@ export default function Home() {
                   {tagsLoading ? (
                     <Skeleton className="h-4 w-1/2" />
                   ) : (
-                    tagsData?.popularTags.map((tag: PopularTag) => (
+                    tagsData?.popularTags.slice(0, 5).map((tag: PopularTag) => (
                       <div
                         key={tag.id}
                         className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"

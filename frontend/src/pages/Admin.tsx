@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/Pagination";
 import { Badge } from "@/components/ui/badge";
 import {
   Eye,
@@ -137,25 +138,11 @@ export default function Admin() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center mt-4 gap-2">
-              <Button
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
-              >
-                Previous
-              </Button>
-              <span className="px-2 py-1 text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-              >
-                Next
-              </Button>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </CardContent>
         </Card>
       </div>

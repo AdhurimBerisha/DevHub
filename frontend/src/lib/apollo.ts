@@ -71,5 +71,8 @@ export const apolloClient = new ApolloClient({
     query: {
       errorPolicy: "all",
     },
+    mutate: {
+      errorPolicy: "all",
+    },
   },
 });
