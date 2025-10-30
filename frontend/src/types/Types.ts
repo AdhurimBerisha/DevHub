@@ -3,6 +3,7 @@ export interface Tag {
   name: string;
   color?: string;
   createdAt: string;
+  postCount?: number;
 }
 
 export interface PopularTag extends Tag {

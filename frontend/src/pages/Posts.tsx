@@ -8,6 +8,11 @@ import { GET_POSTS_QUERY } from "@/graphql/posts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
+import {
+  FilterSort,
+  POST_SORT_OPTIONS,
+  sortPosts,
+} from "@/components/FilterSort";
 
 export default function Posts() {
   const { loading, error, data } = useQuery(GET_POSTS_QUERY, {
@@ -19,10 +24,12 @@ export default function Posts() {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
-  const filteredPosts = useMemo(() => {
+  const filteredAndSortedPosts = useMemo(() => {
     if (!data?.posts) return [];
-    return data.posts.filter(
+    
+    const filtered = data.posts.filter(
       (post) =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,7 +37,9 @@ export default function Posts() {
           tag.name.toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
-  }, [data, searchTerm]);
+
+    return sortPosts(filtered, sortBy);
+  }, [data, searchTerm, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,9 +53,9 @@ export default function Posts() {
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="flex justify-center mb-10">
-          <div className="relative w-full max-w-md">
+        {/* Search and Filter bar */}
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-10">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search posts by title, content, or tag..."
@@ -55,6 +64,12 @@ export default function Posts() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <FilterSort
+            categories={POST_SORT_OPTIONS}
+            activeSort={sortBy}
+            onSortChange={setSortBy}
+            variant="outline"
+          />
         </div>
 
         {/* Layout: main posts + sidebar */}
@@ -81,8 +96,8 @@ export default function Posts() {
               <div className="text-red-500">
                 Error loading posts: {error.message}
               </div>
-            ) : filteredPosts.length > 0 ? (
-              filteredPosts.map((post) => (
+            ) : filteredAndSortedPosts.length > 0 ? (
+              filteredAndSortedPosts.map((post) => (
                 <PostCard
                   key={post.id}
                   id={post.id}
@@ -100,7 +115,9 @@ export default function Posts() {
               ))
             ) : (
               <div className="text-center text-muted-foreground mt-10">
-                No posts found matching “{searchTerm}”.
+                {searchTerm
+                  ? `No posts found matching "${searchTerm}".`
+                  : "No posts available."}
               </div>
             )}
           </div>

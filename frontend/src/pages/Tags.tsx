@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { GET_POPULAR_TAGS, CREATE_TAG_MUTATION } from "@/graphql/posts";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { PopularTag } from "@/types/Types";
 import { Link } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
+import {
+  FilterSort,
+  TAG_SORT_OPTIONS,
+  sortTags,
+} from "@/components/FilterSort";
 
 function TagSkeleton() {
   return (
@@ -37,24 +42,28 @@ export default function Tags() {
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("most-posts");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
   const popularTags = data?.popularTags ?? [];
 
-  const filteredTags = popularTags.filter((tag: PopularTag) =>
-    tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredAndSortedTags = useMemo(() => {
+    const filtered = popularTags.filter((tag: PopularTag) =>
+      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return sortTags(filtered, sortBy);
+  }, [popularTags, searchQuery, sortBy]);
 
-  // Reset page to 1 whenever search changes
+  // Reset page to 1 whenever search or sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, sortBy]);
 
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedTags = filteredTags.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredTags.length / ITEMS_PER_PAGE);
+  const paginatedTags = filteredAndSortedTags.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredAndSortedTags.length / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,12 +74,20 @@ export default function Tags() {
             Browse topics and discover content
           </p>
 
-          <div className="relative max-w-md mb-6">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tags..."
-              className="pl-10"
-              onChange={(e) => setSearchQuery(e.target.value)}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tags..."
+                className="pl-10"
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <FilterSort
+              categories={TAG_SORT_OPTIONS}
+              activeSort={sortBy}
+              onSortChange={setSortBy}
+              variant="outline"
             />
           </div>
         </div>
@@ -149,7 +166,7 @@ export default function Tags() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Tags help content get discovered and connect you with
                   like-minded developers. Explore the tags below to find topics
-                  you’re interested in and join the conversation!
+                  you're interested in and join the conversation!
                 </p>
                 <Button asChild className="w-full mb-2">
                   <Link to="/community-guide">Read Community Guide</Link>
@@ -172,7 +189,6 @@ export default function Tags() {
         </div>
 
         {/* Pagination */}
-
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
