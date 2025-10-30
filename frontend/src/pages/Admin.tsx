@@ -29,7 +29,7 @@ export default function Admin() {
       limit: POSTS_PER_PAGE,
       offset: (currentPage - 1) * POSTS_PER_PAGE,
     },
-    fetchPolicy: "network-only", // ensures refetch returns fresh data
+    fetchPolicy: "network-only",
   });
 
   const [deletePost] = useMutation(DELETE_POST);
