@@ -42,6 +42,7 @@ export const userTypeDefs = gql`
     email: String!
     username: String!
     role: UserRole!
+    gender: String
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -56,8 +57,10 @@ export const userTypeDefs = gql`
   input UpdateUserInput {
     email: String
     username: String
+    currentPassword: String
     password: String
-    role: UserRole
+    role: String
+    gender: String
   }
 
   input LoginInput {

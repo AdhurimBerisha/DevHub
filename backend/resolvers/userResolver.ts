@@ -22,6 +22,7 @@ export const userResolver = {
             email: true,
             username: true,
             role: true,
+            gender: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -41,6 +42,7 @@ export const userResolver = {
             email: true,
             username: true,
             role: true,
+            gender: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -63,6 +65,7 @@ export const userResolver = {
             email: true,
             username: true,
             role: true,
+            gender: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -182,52 +185,60 @@ export const userResolver = {
         input: {
           email?: string;
           username?: string;
+          currentPassword?: string;
           password?: string;
           role?: string;
+          gender?: string;
         };
-      }
+      },
+      context: { user: any }
     ) => {
       try {
-        if (input.email) {
-          const emailValidation = validateEmail(input.email);
-          if (!emailValidation.isValid) {
-            throw new Error(emailValidation.message);
-          }
-        }
-
-        if (input.username) {
-          const usernameValidation = validateUsername(input.username);
-          if (!usernameValidation.isValid) {
-            throw new Error(usernameValidation.message);
-          }
-        }
-
-        if (input.password) {
-          const passwordValidation = validatePassword(input.password);
-          if (!passwordValidation.isValid) {
-            throw new Error(passwordValidation.message);
-          }
+        if (!context.user || context.user.id !== id) {
+          throw new Error("Unauthorized");
         }
 
         const updateData: any = {};
 
+        if (input.password) {
+          if (!input.currentPassword) {
+            throw new Error("Current password is required");
+          }
+
+          const user = await prisma.user.findUnique({ where: { id } });
+          if (!user) throw new Error("User not found");
+
+          const isMatch = await comparePassword(
+            input.currentPassword,
+            user.password
+          );
+          if (!isMatch) throw new Error("Current password is incorrect");
+
+          const passwordValidation = validatePassword(input.password);
+          if (!passwordValidation.isValid)
+            throw new Error(passwordValidation.message);
+
+          updateData.password = await hashPassword(input.password);
+        }
+
         if (input.email) {
+          const emailValidation = validateEmail(input.email);
+          if (!emailValidation.isValid)
+            throw new Error(emailValidation.message);
           updateData.email = normalizeEmail(input.email);
         }
 
         if (input.username) {
+          const usernameValidation = validateUsername(input.username);
+          if (!usernameValidation.isValid)
+            throw new Error(usernameValidation.message);
           updateData.username = input.username.trim();
         }
 
-        if (input.password) {
-          updateData.password = await hashPassword(input.password);
-        }
+        if (input.role) updateData.role = input.role as "USER" | "ADMIN";
+        if (input.gender) updateData.gender = input.gender;
 
-        if (input.role) {
-          updateData.role = input.role as "USER" | "ADMIN";
-        }
-
-        const user = await prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id },
           data: updateData,
           select: {
@@ -235,25 +246,16 @@ export const userResolver = {
             email: true,
             username: true,
             role: true,
+            gender: true,
             createdAt: true,
             updatedAt: true,
           },
         });
 
-        return user;
-      } catch (error) {
+        return updatedUser;
+      } catch (error: any) {
         console.error("Error updating user:", error);
-        throw new Error("Failed to update user");
-      }
-    },
-
-    deleteUser: async (_: unknown, { id }: { id: string }) => {
-      try {
-        await prisma.user.delete({ where: { id } });
-        return true;
-      } catch (error) {
-        console.error("Error deleting user:", error);
-        throw new Error("Failed to delete user");
+        throw new Error(error.message || "Failed to update user");
       }
     },
 
@@ -324,6 +326,24 @@ export const userResolver = {
           user: null,
           token: null,
         };
+      }
+    },
+
+    deleteUser: async (
+      _: unknown,
+      { id }: { id: string },
+      context: { user: any }
+    ) => {
+      if (!context.user || context.user.id !== id) {
+        return false;
+      }
+
+      try {
+        await prisma.user.delete({ where: { id } });
+        return true;
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        return false;
       }
     },
   },

@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
-import { useApolloClient } from "@apollo/client"; // ✅ added
+import { useApolloClient } from "@apollo/client";
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
@@ -50,10 +50,10 @@ export function AppSidebar() {
   const { user, isAuthenticated, isAdmin } = useAuthStore();
   const { signOut } = useAuth();
   const { isDark, toggle } = useTheme();
-  const client = useApolloClient(); // ✅ get apollo client
+  const client = useApolloClient();
 
   const handleSignOut = async () => {
-    await client.clearStore(); // ✅ clears Apollo cache
+    await client.clearStore();
     signOut();
   };
 

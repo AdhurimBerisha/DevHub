@@ -18,18 +18,16 @@ model User {
   username  String   @unique
   password  String
   role      UserRole @default(USER)
-  gender String?
+  gender    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  posts    Post[]
-  comments Comment[]
-  votes    Vote[]
-
-  // Community relations
-  communitiesOwned     Community[]
-  communityMemberships CommunityMember[]
+  posts                  Post[]            @relation("UserPosts")
+  comments               Comment[]         @relation("UserComments")
+  votes                  Vote[]            @relation("UserVotes")
+  communitiesOwned       Community[]       @relation("CommunityOwner")
+  communityMemberships   CommunityMember[] @relation("Memberships")
 
   @@map("users")
 }
@@ -39,7 +37,7 @@ model Post {
   title     String
   content   String
   authorId  String
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User      @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
   tags      PostTag[]
   comments  Comment[]
   votes     Vote[]
@@ -61,7 +59,7 @@ model Comment {
   id        String   @id @default(cuid())
   content   String
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User     @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   votes     Vote[]
@@ -94,7 +92,7 @@ model PostTag {
 model Vote {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserVotes", fields: [userId], references: [id], onDelete: Cascade)
   postId    String?
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
@@ -113,19 +111,19 @@ model Community {
   slug        String            @unique
   description String?
   private     Boolean           @default(false)
-  owner       User              @relation(fields: [ownerId], references: [id])
+  owner       User              @relation("CommunityOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId     String
   members     CommunityMember[]
   posts       Post[]
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  updatedAt   DateTime          @default(now()) @updatedAt
 }
 
 model CommunityMember {
   id          Int       @id @default(autoincrement())
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation("Memberships", fields: [userId], references: [id], onDelete: Cascade)
   userId      String
-  community   Community @relation(fields: [communityId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   communityId Int
   role        String    @default("MEMBER")
   createdAt   DateTime  @default(now())
