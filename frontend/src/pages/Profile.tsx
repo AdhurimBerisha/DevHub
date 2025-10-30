@@ -359,13 +359,11 @@ export default function Profile() {
           )}
 
           {/* Pagination */}
-          {userPosts.length > POSTS_PER_PAGE && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>
