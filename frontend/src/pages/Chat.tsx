@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Search, MoreVertical, Phone, Video } from "lucide-react";
 
-// Mock data
 const conversations = [
   {
     id: "1",
@@ -109,7 +108,6 @@ export default function Chat() {
 
   const handleSend = () => {
     if (message.trim()) {
-      // Handle sending message
       setMessage("");
     }
   };

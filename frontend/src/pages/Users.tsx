@@ -84,6 +84,7 @@ export default function Users() {
 
         await removeFriend({ variables: { friendshipId: user.friendshipId } });
         toast.success("Friend removed");
+        await refetch();
 
         setAllUsers((prev) =>
           prev.map((u) =>
@@ -98,6 +99,8 @@ export default function Users() {
         });
         const newFriendshipId = result.data.sendFriendRequest.id;
         toast.success("Friend request sent");
+
+        await refetch();
 
         setAllUsers((prev) =>
           prev.map((u) =>
@@ -125,6 +128,8 @@ export default function Users() {
       });
 
       toast.success(`Friend request ${status.toLowerCase()}`);
+
+      await refetch();
 
       setFriendRequests((prev) =>
         prev.filter((req) => req.id !== friendshipId)
