@@ -5,15 +5,7 @@ import { ConversationItem } from "@/components/ConversationItem";
 import { ChatMessage } from "@/components/ChatMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Send,
-  Search,
-  MoreVertical,
-  Phone,
-  Video,
-  UserPlus,
-  X,
-} from "lucide-react";
+import { Send, Search, MoreVertical, UserPlus, X } from "lucide-react";
 import { socketService } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
 import { format } from "date-fns";
@@ -67,7 +59,6 @@ export default function Chat() {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [message, setMessage] = useState("");
   const [showConversations, setShowConversations] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [typingUsers, setTypingUsers] = useState<
@@ -632,29 +623,6 @@ export default function Chat() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden sm:flex"
-                  >
-                    <Phone className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden sm:flex"
-                  >
-                    <Video className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowInfo(!showInfo)}
-                  >
-                    <MoreVertical className="h-5 w-5" />
-                  </Button>
-                </div>
               </div>
 
               {/* Messages */}
@@ -716,37 +684,6 @@ export default function Chat() {
             </div>
           )}
         </div>
-
-        {/* Chat Info Sidebar */}
-        {activeConversation && (
-          <div
-            className={`${
-              showInfo ? "absolute right-0 top-0 bottom-0 z-50" : "hidden"
-            } lg:block w-80 border-l border-border p-6 bg-background overflow-y-auto`}
-          >
-            <div className="text-center mb-6">
-              <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-2xl mx-auto mb-4">
-                {currentConversation?.name.charAt(0).toUpperCase()}
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">
-                {currentConversation?.name}
-              </h3>
-              <p className="text-sm text-muted-foreground">Community Chat</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-card rounded-lg p-4 border border-border">
-                <h4 className="text-sm font-semibold text-foreground mb-2">
-                  About
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  A community for React developers to share knowledge, ask
-                  questions, and discuss best practices.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
