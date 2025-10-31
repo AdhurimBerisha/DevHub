@@ -39,6 +39,7 @@ export const GET_POSTS_QUERY = gql`
         name
         color
       }
+      commentCount
       comments {
         id
         content
@@ -114,6 +115,7 @@ export const GET_POST_QUERY = gql`
         name
         color
       }
+      commentCount
       comments {
         id
         content

@@ -60,7 +60,7 @@ export default function Home() {
                   excerpt={post.content.substring(0, 150) + "..."}
                   tags={post.tags}
                   votes={post.votes}
-                  commentsCount={post.comments.length}
+                  commentsCount={post.commentCount || 0}
                   community={post.community}
                 />
               ))

@@ -275,7 +275,7 @@ export default function PostDetail() {
                   )}
                 <Button variant="ghost" size="sm">
                   <MessageSquare className="h-4 w-4 mr-2" />{" "}
-                  {post.comments.length}
+                  {post.commentCount || 0}
                 </Button>
                 <Button variant="ghost" size="sm">
                   <Share2 className="h-4 w-4 mr-2" /> Share

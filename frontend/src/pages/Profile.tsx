@@ -53,6 +53,7 @@ const GET_USER_POSTS = gql`
       content
       createdAt
       viewCount
+      commentCount
       votes {
         value
       }
@@ -152,7 +153,7 @@ export default function Profile() {
       0
     );
     const totalComments = posts.reduce(
-      (sum, post) => sum + (post.comments?.length || 0),
+      (sum, post) => sum + (post.commentCount || 0),
       0
     );
 
@@ -329,7 +330,7 @@ export default function Profile() {
               {paginatedPosts.map((post) => {
                 const likes =
                   post.votes?.filter((v) => v.value === 1).length || 0;
-                const comments = post.comments?.length || 0;
+                const comments = post.commentCount || 0;
                 return (
                   <Card
                     key={post.id}

@@ -10,6 +10,7 @@ export const postsTypeDefs = gql`
     communityId: ID
     tags: [Tag!]!
     comments: [Comment!]!
+    commentCount: Int! # computed as total comments including replies
     votes: [Vote!]! # all votes
     voteCount: Int! # computed as sum of vote values
     published: Boolean!

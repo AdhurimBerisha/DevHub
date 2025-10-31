@@ -586,4 +586,18 @@ export const postsResolver = {
       }
     },
   },
+
+  Post: {
+    commentCount: async (post: any) => {
+      try {
+        const totalCount = await (prisma as any).comment.count({
+          where: { postId: post.id },
+        });
+        return totalCount;
+      } catch (error) {
+        console.error("Error counting comments:", error);
+        return 0;
+      }
+    },
+  },
 };

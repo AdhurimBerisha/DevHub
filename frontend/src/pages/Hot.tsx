@@ -72,7 +72,7 @@ export default function Hot() {
                 excerpt={post.content.slice(0, 200) + "..."}
                 tags={post.tags}
                 votes={post.votes}
-                commentsCount={post.comments.length}
+                commentsCount={post.commentCount || 0}
               />
             </div>
           ))}

@@ -42,6 +42,7 @@ export function createApolloServer(prisma: PrismaClient) {
         ...chatResolver.Conversation,
       },
       Post: {
+        ...postsResolver.Post,
         community: async (post: any) => {
           if (!post.communityId) {
             console.log("Post has no communityId:", post.id);

@@ -145,7 +145,7 @@ export function sortPosts(posts: Post[], sortValue: string): Post[] {
 
     case "most-commented":
       return sorted.sort(
-        (a, b) => (b.comments?.length || 0) - (a.comments?.length || 0)
+        (a, b) => (b.commentCount || 0) - (a.commentCount || 0)
       );
 
     case "newest":

@@ -107,7 +107,7 @@ export default function Posts() {
                   excerpt={post.content.substring(0, 150) + "..."}
                   tags={post.tags}
                   votes={post.votes}
-                  commentsCount={post.comments.length}
+                  commentsCount={post.commentCount || 0}
                   readTime={`${Math.ceil(
                     post.content.split(" ").length / 200
                   )} min`}
