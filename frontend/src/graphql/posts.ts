@@ -33,6 +33,8 @@ export const GET_POSTS_QUERY = gql`
         id
         name
         slug
+        description
+        memberCount
       }
       tags {
         id
@@ -109,6 +111,8 @@ export const GET_POST_QUERY = gql`
         id
         name
         slug
+        description
+        memberCount
       }
       tags {
         id

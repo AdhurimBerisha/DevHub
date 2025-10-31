@@ -7,11 +7,12 @@ import {
   Bookmark,
   ArrowLeft,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { Sparkles, Users } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { formatDistanceToNow } from "date-fns";
@@ -191,12 +192,15 @@ export default function PostDetail() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
 
-        <Card className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2">
+            <Card className="p-6">
           <div className="flex gap-4">
             {/* ======= VOTE SECTION ======= */}
             <div className="flex flex-col items-center gap-2">
@@ -484,6 +488,49 @@ export default function PostDetail() {
             </div>
           </div>
         </Card>
+        </div>
+
+        {/* Community Card Sidebar */}
+        {post.community && (
+          <div className="lg:col-span-1">
+            <div className="sticky top-20">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h2 className="font-bold">{post.community.name}</h2>
+                  </div>
+                  {post.community.description && (
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {post.community.description}
+                    </p>
+                  )}
+                  {post.community.memberCount !== undefined && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <Users className="h-4 w-4" />
+                      <span>
+                        {post.community.memberCount?.toLocaleString?.() ??
+                          post.community.memberCount}{" "}
+                        members
+                      </span>
+                    </div>
+                  )}
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to={`/community/${post.community.slug}`}>
+                      View Community
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full mt-2">
+                    <Link to={`/create-post?communityId=${post.community.id}`}>
+                      Create Post
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );

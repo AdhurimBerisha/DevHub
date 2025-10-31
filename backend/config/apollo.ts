@@ -51,9 +51,24 @@ export function createApolloServer(prisma: PrismaClient) {
           try {
             const community = await prisma.community.findUnique({
               where: { id: post.communityId },
-              select: { id: true, name: true, slug: true },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                description: true,
+              },
             });
-            return community;
+            if (!community) return null;
+            const memberCount = await prisma.communityMember.count({
+              where: { communityId: post.communityId },
+            });
+            return {
+              id: community.id,
+              name: community.name,
+              slug: community.slug,
+              description: community.description,
+              memberCount,
+            };
           } catch (error) {
             console.error("Error fetching community for post:", error);
             return null;
