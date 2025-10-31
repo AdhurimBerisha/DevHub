@@ -43,9 +43,28 @@ export const GET_POSTS_QUERY = gql`
         id
         content
         createdAt
+        parentCommentId
         author {
           id
           username
+        }
+        replies {
+          id
+          content
+          createdAt
+          parentCommentId
+          author {
+            id
+            username
+          }
+          votes {
+            id
+            value
+            user {
+              id
+              username
+            }
+          }
         }
         votes {
           id
@@ -99,9 +118,28 @@ export const GET_POST_QUERY = gql`
         id
         content
         createdAt
+        parentCommentId
         author {
           id
           username
+        }
+        replies {
+          id
+          content
+          createdAt
+          parentCommentId
+          author {
+            id
+            username
+          }
+          votes {
+            id
+            value
+            user {
+              id
+              username
+            }
+          }
         }
         votes {
           id
@@ -227,9 +265,19 @@ export const ADD_COMMENT_MUTATION = gql`
         id
         content
         createdAt
+        parentCommentId
         author {
           id
           username
+        }
+        replies {
+          id
+          content
+          createdAt
+          author {
+            id
+            username
+          }
         }
         votes {
           id

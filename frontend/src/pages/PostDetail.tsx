@@ -31,6 +31,8 @@ export default function PostDetail() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [commentText, setCommentText] = useState("");
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
   const { loading, error, data } = useQuery(GET_POST_QUERY, {
@@ -71,7 +73,7 @@ export default function PostDetail() {
     },
   });
 
-  const handleComment = async () => {
+  const handleComment = async (parentCommentId?: string) => {
     if (!user) {
       toast({
         title: "Login required",
@@ -80,45 +82,50 @@ export default function PostDetail() {
       });
       return;
     }
-    if (!commentText.trim()) return;
+
+    const textToUse = parentCommentId ? replyText[parentCommentId] : commentText;
+    if (!textToUse.trim()) return;
 
     try {
       await addComment({
         variables: {
           input: {
-            postId: id,
-            content: commentText,
-          },
-        },
-        optimisticResponse: {
-          addComment: {
-            __typename: "AddCommentResponse",
-            success: true,
-            message: "Comment added (optimistic)",
-            comment: {
-              __typename: "Comment",
-              id: "temp-" + Date.now(),
-              content: commentText,
-              createdAt: new Date().toISOString(),
-              author: {
-                __typename: "User",
-                id: user.id,
-                username: user.username,
-              },
-              votes: [],
-            },
+            postId: id!,
+            content: textToUse,
+            parentCommentId: parentCommentId || undefined,
           },
         },
       });
 
-      setCommentText("");
-      toast({ title: "Comment added successfully" });
-    } catch (err) {
+      if (parentCommentId) {
+        setReplyText((prev) => ({ ...prev, [parentCommentId]: "" }));
+        setReplyingTo(null);
+        toast({ title: "Reply added successfully" });
+      } else {
+        setCommentText("");
+        toast({ title: "Comment added successfully" });
+      }
+    } catch (err: any) {
       toast({
         title: "Error",
-        description: "Failed to add comment",
+        description: err.message || "Failed to add comment",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleReply = (commentId: string) => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login to reply",
+        variant: "destructive",
+      });
+      return;
+    }
+    setReplyingTo(replyingTo === commentId ? null : commentId);
+    if (replyingTo !== commentId && !replyText[commentId]) {
+      setReplyText((prev) => ({ ...prev, [commentId]: "" }));
     }
   };
 
@@ -313,93 +320,162 @@ export default function PostDetail() {
                   </p>
                 )}
                 {post.comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="flex gap-3 border-b border-border pb-4 last:border-none"
-                  >
-                    {/* Comment vote bar */}
-                    <div className="flex flex-col items-center mt-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 p-0"
-                        onClick={() => handleCommentVote(comment.id, 1)}
-                      >
-                        <ArrowBigUp
-                          className="h-4 w-4"
-                          stroke={
-                            comment.votes.some(
-                              (v) => v.user.id === user?.id && v.value === 1
-                            )
-                              ? "hsl(var(--upvote))"
-                              : "currentColor"
-                          }
-                          fill={
-                            comment.votes.some(
-                              (v) => v.user.id === user?.id && v.value === 1
-                            )
-                              ? "hsl(var(--upvote))"
-                              : "none"
-                          }
-                        />
-                      </Button>
+                  <div key={comment.id} className="space-y-3">
+                    {/* Main Comment */}
+                    <div className="flex gap-3 border-b border-border pb-4 last:border-none">
+                      {/* Comment vote bar */}
+                      <div className="flex flex-col items-center mt-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 p-0"
+                          onClick={() => handleCommentVote(comment.id, 1)}
+                        >
+                          <ArrowBigUp
+                            className="h-4 w-4"
+                            stroke={
+                              comment.votes.some(
+                                (v) => v.user.id === user?.id && v.value === 1
+                              )
+                                ? "hsl(var(--upvote))"
+                                : "currentColor"
+                            }
+                            fill={
+                              comment.votes.some(
+                                (v) => v.user.id === user?.id && v.value === 1
+                              )
+                                ? "hsl(var(--upvote))"
+                                : "none"
+                            }
+                          />
+                        </Button>
 
-                      <span className="text-xs font-semibold">
-                        {comment.votes.reduce((acc, v) => acc + v.value, 0)}
-                      </span>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 p-0"
-                        onClick={() => handleCommentVote(comment.id, -1)}
-                      >
-                        <ArrowBigDown
-                          className="h-4 w-4"
-                          stroke={
-                            comment.votes.some(
-                              (v) => v.user.id === user?.id && v.value === -1
-                            )
-                              ? "hsl(var(--destructive))"
-                              : "currentColor"
-                          }
-                          fill={
-                            comment.votes.some(
-                              (v) => v.user.id === user?.id && v.value === -1
-                            )
-                              ? "hsl(var(--destructive))"
-                              : "none"
-                          }
-                        />
-                      </Button>
-                    </div>
-
-                    {/* Comment content area */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback>
-                            {comment.author.username[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-semibold">
-                          {comment.author.username}
+                        <span className="text-xs font-semibold">
+                          {comment.votes.reduce((acc, v) => acc + v.value, 0)}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(comment.createdAt))} ago
-                        </span>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 p-0"
+                          onClick={() => handleCommentVote(comment.id, -1)}
+                        >
+                          <ArrowBigDown
+                            className="h-4 w-4"
+                            stroke={
+                              comment.votes.some(
+                                (v) => v.user.id === user?.id && v.value === -1
+                              )
+                                ? "hsl(var(--destructive))"
+                                : "currentColor"
+                            }
+                            fill={
+                              comment.votes.some(
+                                (v) => v.user.id === user?.id && v.value === -1
+                              )
+                                ? "hsl(var(--destructive))"
+                                : "none"
+                            }
+                          />
+                        </Button>
                       </div>
 
-                      <p className="text-sm text-foreground mb-2 ml-8">
-                        {comment.content}
-                      </p>
+                      {/* Comment content area */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback>
+                              {comment.author.username[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-semibold">
+                            {comment.author.username}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(comment.createdAt))} ago
+                          </span>
+                        </div>
 
-                      {/* Comment actions (Reply, Award, Share) */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground ml-8">
-                        <button className="hover:text-foreground flex items-center gap-1">
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          Reply
-                        </button>
+                        <p className="text-sm text-foreground mb-2 ml-8">
+                          {comment.content}
+                        </p>
+
+                        {/* Comment actions */}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground ml-8">
+                          <button
+                            onClick={() => handleReply(comment.id)}
+                            className="hover:text-foreground flex items-center gap-1"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            Reply
+                          </button>
+                        </div>
+
+                        {/* Reply form */}
+                        {replyingTo === comment.id && user && (
+                          <div className="mt-3 ml-8 space-y-2">
+                            <Textarea
+                              placeholder="Write a reply..."
+                              value={replyText[comment.id] || ""}
+                              onChange={(e) =>
+                                setReplyText((prev) => ({
+                                  ...prev,
+                                  [comment.id]: e.target.value,
+                                }))
+                              }
+                              className="min-h-[80px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleComment(comment.id)}
+                                disabled={!replyText[comment.id]?.trim()}
+                              >
+                                Reply
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  setReplyText((prev) => ({
+                                    ...prev,
+                                    [comment.id]: "",
+                                  }));
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Replies */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="mt-4 ml-8 space-y-3 border-l-2 border-border pl-4">
+                            {comment.replies.map((reply: any) => (
+                              <div key={reply.id} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5">
+                                    <AvatarFallback>
+                                      {reply.author.username[0].toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-xs font-semibold">
+                                    {reply.author.username}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDistanceToNow(new Date(reply.createdAt))}{" "}
+                                    ago
+                                  </span>
+                                </div>
+                                <p className="text-sm text-foreground ml-7">
+                                  {reply.content}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -12,7 +12,7 @@ interface UserCardProps {
   };
   onMessage?: (id: string) => void;
   onToggleFriend?: (id: string) => void;
-  onClick?: () => void; // ← card click
+  onClick?: () => void;
 }
 
 export const UserCard = ({
@@ -24,7 +24,7 @@ export const UserCard = ({
   return (
     <div
       className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
-      onClick={onClick} // whole card clickable
+      onClick={onClick}
     >
       <div className="flex items-center gap-4">
         {/* Avatar */}

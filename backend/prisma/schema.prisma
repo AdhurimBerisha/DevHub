@@ -68,15 +68,18 @@ model Post {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  authorId  String
-  author    User     @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  votes     Vote[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  content        String
+  authorId       String
+  author         User      @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
+  postId         String
+  post           Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentCommentId String?
+  parentComment  Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies        Comment[] @relation("CommentReplies")
+  votes          Vote[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@map("comments")
 }

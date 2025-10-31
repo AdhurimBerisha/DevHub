@@ -33,12 +33,25 @@ export const postsResolver = {
             author: { select: { id: true, username: true, email: true } },
             tags: { include: { tag: true } },
             comments: {
+              where: { parentCommentId: null },
               include: {
                 author: { select: { id: true, username: true } },
                 votes: {
                   include: { user: { select: { id: true, username: true } } },
                 },
+                replies: {
+                  include: {
+                    author: { select: { id: true, username: true } },
+                    votes: {
+                      include: {
+                        user: { select: { id: true, username: true } },
+                      },
+                    },
+                  },
+                  orderBy: { createdAt: "asc" },
+                },
               },
+              orderBy: { createdAt: "desc" },
             },
             votes: {
               include: { user: { select: { id: true, username: true } } },
@@ -49,11 +62,29 @@ export const postsResolver = {
           skip: offset,
         });
 
-        return posts.map((p) => ({
+        return posts.map((p: any) => ({
           ...p,
-          tags: (p.tags as any[]).map((pt) => pt.tag),
+          tags: (p.tags as any[]).map((pt: any) => pt.tag),
           likes: p.votes.filter((v: any) => v.value === 1),
           dislikes: p.votes.filter((v: any) => v.value === -1),
+          comments: p.comments.map((c: any) => ({
+            ...c,
+            likes: c.votes.filter((v: any) => v.value === 1),
+            dislikes: c.votes.filter((v: any) => v.value === -1),
+            voteCount: c.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
+            replies: c.replies.map((reply: any) => ({
+              ...reply,
+              likes: reply.votes.filter((v: any) => v.value === 1),
+              dislikes: reply.votes.filter((v: any) => v.value === -1),
+              voteCount: reply.votes.reduce(
+                (sum: number, v: any) => sum + v.value,
+                0
+              ),
+            })),
+          })),
         }));
       } catch (error) {
         console.error("Error fetching posts:", error);
@@ -69,12 +100,25 @@ export const postsResolver = {
             author: { select: { id: true, username: true, email: true } },
             tags: { include: { tag: true } },
             comments: {
+              where: { parentCommentId: null },
               include: {
                 author: { select: { id: true, username: true } },
                 votes: {
                   include: { user: { select: { id: true, username: true } } },
                 },
+                replies: {
+                  include: {
+                    author: { select: { id: true, username: true } },
+                    votes: {
+                      include: {
+                        user: { select: { id: true, username: true } },
+                      },
+                    },
+                  },
+                  orderBy: { createdAt: "asc" },
+                },
               },
+              orderBy: { createdAt: "desc" },
             },
             votes: {
               include: { user: { select: { id: true, username: true } } },
@@ -89,6 +133,24 @@ export const postsResolver = {
           tags: (post.tags as any[]).map((pt) => pt.tag),
           likes: post.votes.filter((v: any) => v.value === 1),
           dislikes: post.votes.filter((v: any) => v.value === -1),
+          comments: (post.comments as any[]).map((c: any) => ({
+            ...c,
+            likes: c.votes.filter((v: any) => v.value === 1),
+            dislikes: c.votes.filter((v: any) => v.value === -1),
+            voteCount: c.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
+            replies: c.replies.map((reply: any) => ({
+              ...reply,
+              likes: reply.votes.filter((v: any) => v.value === 1),
+              dislikes: reply.votes.filter((v: any) => v.value === -1),
+              voteCount: reply.votes.reduce(
+                (sum: number, v: any) => sum + v.value,
+                0
+              ),
+            })),
+          })),
         };
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -144,23 +206,41 @@ export const postsResolver = {
 
     comments: async (_: unknown, { postId }: { postId: string }) => {
       try {
-        const comments = await prisma.comment.findMany({
-          where: { postId },
+        const comments = await (prisma as any).comment.findMany({
+          where: { postId, parentCommentId: null },
           include: {
             author: { select: { id: true, username: true } },
             votes: {
               include: { user: { select: { id: true, username: true } } },
             },
+            replies: {
+              include: {
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
+                },
+              },
+              orderBy: { createdAt: "asc" },
+            },
           },
           orderBy: { createdAt: "desc" },
         });
 
-        return comments.map((c) => ({
+        return comments.map((c: any) => ({
           ...c,
           votes: c.votes,
           likes: c.votes.filter((v: any) => v.value === 1),
           dislikes: c.votes.filter((v: any) => v.value === -1),
           voteCount: c.votes.reduce((sum: number, v: any) => sum + v.value, 0),
+          replies: c.replies.map((reply: any) => ({
+            ...reply,
+            likes: reply.votes.filter((v: any) => v.value === 1),
+            dislikes: reply.votes.filter((v: any) => v.value === -1),
+            voteCount: reply.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
+          })),
         }));
       } catch (error) {
         console.error("Error fetching comments:", error);
@@ -353,7 +433,11 @@ export const postsResolver = {
 
     addComment: async (
       _: unknown,
-      { input }: { input: { content: string; postId: string } },
+      {
+        input,
+      }: {
+        input: { content: string; postId: string; parentCommentId?: string };
+      },
       { user }: { user: any }
     ) => {
       if (!user)
@@ -364,24 +448,54 @@ export const postsResolver = {
         };
 
       try {
-        const comment = await prisma.comment.create({
+        if (input.parentCommentId) {
+          const parentComment = await (prisma as any).comment.findUnique({
+            where: { id: input.parentCommentId },
+          });
+          if (!parentComment || parentComment.postId !== input.postId) {
+            return {
+              success: false,
+              message: "Invalid parent comment",
+              comment: null,
+            };
+          }
+        }
+
+        const comment = await (prisma as any).comment.create({
           data: {
             content: input.content,
             postId: input.postId,
             authorId: user.id,
+            parentCommentId: input.parentCommentId || null,
           },
           include: {
             author: { select: { id: true, username: true } },
             votes: {
               include: { user: { select: { id: true, username: true } } },
             },
+            parentComment: input.parentCommentId
+              ? {
+                  include: {
+                    author: { select: { id: true, username: true } },
+                  },
+                }
+              : false,
           },
         });
 
         return {
           success: true,
           message: "Comment added successfully",
-          comment,
+          comment: {
+            ...comment,
+            replies: [],
+            likes: comment.votes.filter((v: any) => v.value === 1),
+            dislikes: comment.votes.filter((v: any) => v.value === -1),
+            voteCount: comment.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
+          },
         };
       } catch (error) {
         console.error("Error adding comment:", error);

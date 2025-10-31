@@ -24,6 +24,9 @@ export const postsTypeDefs = gql`
     content: String!
     author: User!
     post: Post!
+    parentCommentId: ID
+    parentComment: Comment
+    replies: [Comment!]!
     votes: [Vote!]! # all votes
     voteCount: Int! # computed sum of vote values
     likes: [Vote!]! # votes with value = 1
@@ -75,6 +78,7 @@ export const postsTypeDefs = gql`
   input CreateCommentInput {
     content: String!
     postId: ID!
+    parentCommentId: ID
   }
 
   type PostResponse {

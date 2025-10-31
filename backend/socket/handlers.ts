@@ -2,18 +2,13 @@ import { Socket } from "socket.io";
 import { Server as SocketIOServer } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 
-export function setupSocketHandlers(
-  io: SocketIOServer,
-  prisma: PrismaClient
-) {
+export function setupSocketHandlers(io: SocketIOServer, prisma: PrismaClient) {
   io.on("connection", (socket: Socket) => {
     const user = socket.data.user;
     console.log(`✅ User ${user.username} (${user.id}) connected`);
 
-    // Join user's personal room
     socket.join(`user:${user.id}`);
 
-    // Get or create conversation with another user
     socket.on("get_or_create_conversation", async (otherUserId: string) => {
       try {
         if (user.id === otherUserId) {
@@ -101,7 +96,7 @@ export function setupSocketHandlers(
             where: { id: otherUserId },
             select: { id: true, username: true, email: true },
           });
-          otherUserInfo = otherUser;
+          otherUserInfo = otherUser || undefined;
         }
 
         if (!otherUserInfo) {
@@ -127,7 +122,6 @@ export function setupSocketHandlers(
       }
     });
 
-    // Join conversation
     socket.on("join_conversation", async (conversationId: string) => {
       try {
         const participant = await prisma.conversationParticipant.findFirst({
@@ -152,13 +146,11 @@ export function setupSocketHandlers(
       }
     });
 
-    // Leave conversation
     socket.on("leave_conversation", (conversationId: string) => {
       socket.leave(`conversation:${conversationId}`);
       socket.emit("left_conversation", conversationId);
     });
 
-    // Send message
     socket.on(
       "send_message",
       async (data: {
@@ -220,16 +212,17 @@ export function setupSocketHandlers(
       }
     );
 
-    // Typing indicator
-    socket.on("typing", (data: { conversationId: string; isTyping: boolean }) => {
-      socket.to(`conversation:${data.conversationId}`).emit("user_typing", {
-        userId: user.id,
-        username: user.username,
-        isTyping: data.isTyping,
-      });
-    });
+    socket.on(
+      "typing",
+      (data: { conversationId: string; isTyping: boolean }) => {
+        socket.to(`conversation:${data.conversationId}`).emit("user_typing", {
+          userId: user.id,
+          username: user.username,
+          isTyping: data.isTyping,
+        });
+      }
+    );
 
-    // Disconnect handler
     socket.on("disconnect", () => {
       console.log(`❌ User ${user.username} (${user.id}) disconnected`);
     });
