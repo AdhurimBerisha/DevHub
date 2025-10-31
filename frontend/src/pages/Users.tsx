@@ -135,7 +135,7 @@ export default function Users() {
         prev.filter((req) => req.id !== friendshipId)
       );
 
-      if (accept) {
+      if (accept && result.data?.respondToFriendRequest) {
         const updatedFriendship = result.data.respondToFriendRequest;
 
         setAllUsers((prev) =>

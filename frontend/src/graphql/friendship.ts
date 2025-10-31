@@ -44,6 +44,14 @@ export const RESPOND_TO_FRIEND_REQUEST = gql`
     respondToFriendRequest(friendshipId: $friendshipId, status: $status) {
       id
       status
+      requester {
+        id
+        username
+      }
+      receiver {
+        id
+        username
+      }
     }
   }
 `;

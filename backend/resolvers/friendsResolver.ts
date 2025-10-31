@@ -84,11 +84,7 @@ export const friendResolver = {
         include: { requester: true, receiver: true },
       });
 
-      return {
-        success: true,
-        message: `Friend request ${status.toLowerCase()}`,
-        friendship: updated,
-      };
+      return updated;
     },
     removeFriend: async (
       _: unknown,
