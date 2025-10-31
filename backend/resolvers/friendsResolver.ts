@@ -34,7 +34,7 @@ export const friendResolver = {
 
   Mutation: {
     sendFriendRequest: async (
-      _: unknown,
+      _: any,
       { receiverId }: { receiverId: string },
       context: { user: any }
     ) => {
@@ -51,22 +51,14 @@ export const friendResolver = {
         },
       });
 
-      if (existing)
-        return {
-          success: false,
-          message: "Friend request already exists",
-          friendship: existing,
-        };
+      if (existing) return existing;
 
       const friendship = await prisma.friendship.create({
-        data: {
-          requesterId: context.user.id,
-          receiverId,
-        },
+        data: { requesterId: context.user.id, receiverId },
         include: { requester: true, receiver: true },
       });
 
-      return { success: true, message: "Friend request sent", friendship };
+      return friendship;
     },
 
     respondToFriendRequest: async (
@@ -97,6 +89,32 @@ export const friendResolver = {
         message: `Friend request ${status.toLowerCase()}`,
         friendship: updated,
       };
+    },
+    removeFriend: async (
+      _: unknown,
+      { friendshipId }: { friendshipId: string },
+      context: { user: any }
+    ) => {
+      if (!context.user) throw new Error("Unauthorized");
+
+      const friendship = await prisma.friendship.findUnique({
+        where: { id: friendshipId },
+      });
+
+      if (!friendship) throw new Error("Friendship not found");
+
+      if (
+        friendship.requesterId !== context.user.id &&
+        friendship.receiverId !== context.user.id
+      ) {
+        throw new Error("You are not authorized to remove this friendship");
+      }
+
+      await prisma.friendship.delete({
+        where: { id: friendshipId },
+      });
+
+      return true;
     },
   },
 };

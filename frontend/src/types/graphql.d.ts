@@ -25,6 +25,8 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   isFriend: boolean;
+  friendshipId?: string | null;
+  pending?: boolean;
 }
 
 export interface Comment {

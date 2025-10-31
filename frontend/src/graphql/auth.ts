@@ -44,6 +44,7 @@ export const GET_USERS_QUERY = gql`
       username
       role
       isFriend
+      friendshipId
       createdAt
       updatedAt
     }

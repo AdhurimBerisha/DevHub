@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { GET_USERS_QUERY } from "@/graphql/auth";
 import {
@@ -29,9 +29,24 @@ export default function Users() {
   const [othersPage, setOthersPage] = useState(1);
   const itemsPerPage = 12;
 
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+
   const navigate = useNavigate();
 
-  const { data, loading, error, refetch } = useQuery(GET_USERS_QUERY);
+  const { data, loading, error, refetch } = useQuery(GET_USERS_QUERY, {
+    fetchPolicy: "network-only",
+    onCompleted: (data) => {
+      const usersWithFriendship = data.users.map((u: User) => ({
+        ...u,
+        friendshipId: u.friendshipId || null,
+      }));
+
+      setAllUsers(usersWithFriendship);
+      setFriendRequests(data.friendRequests);
+    },
+  });
+
   const [sendFriendRequest] = useMutation(SEND_FRIEND_REQUEST);
   const [removeFriend] = useMutation(REMOVE_FRIEND);
   const [respondToFriendRequest] = useMutation(RESPOND_TO_FRIEND_REQUEST);
@@ -39,10 +54,7 @@ export default function Users() {
   if (loading) return <p>Loading users...</p>;
   if (error) return <p>Error: {error.message}</p>;
 
-  const users: User[] = data?.users ?? [];
-  const friendRequests: FriendRequest[] = data?.friendRequests ?? [];
-
-  const filteredUsers = users.filter((user) =>
+  const filteredUsers = allUsers.filter((user) =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -65,19 +77,39 @@ export default function Users() {
   const handleToggleFriend = async (user: User) => {
     try {
       if (user.isFriend) {
-        await removeFriend({ variables: { friendshipId: user.id } });
+        if (!user.friendshipId) {
+          toast.error("Cannot remove friend: friendshipId missing");
+          return;
+        }
+
+        await removeFriend({ variables: { friendshipId: user.friendshipId } });
         toast.success("Friend removed");
+
+        setAllUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id
+              ? { ...u, isFriend: false, friendshipId: null, pending: false }
+              : u
+          )
+        );
       } else {
-        await sendFriendRequest({ variables: { receiverId: user.id } });
+        const result = await sendFriendRequest({
+          variables: { receiverId: user.id },
+        });
+        const newFriendshipId = result.data.sendFriendRequest.id;
         toast.success("Friend request sent");
+
+        setAllUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id
+              ? { ...u, pending: true, friendshipId: newFriendshipId }
+              : u
+          )
+        );
       }
-      refetch();
     } catch (err) {
-      if (err instanceof Error) {
-        toast.error(err.message);
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
+      if (err instanceof Error) toast.error(err.message);
+      else toast.error("An unexpected error occurred.");
     }
   };
 
@@ -86,17 +118,37 @@ export default function Users() {
     accept: boolean
   ) => {
     try {
-      await respondToFriendRequest({
-        variables: { friendshipId, status: accept ? "ACCEPTED" : "REJECTED" },
+      const status = accept ? "ACCEPTED" : "REJECTED";
+
+      const result = await respondToFriendRequest({
+        variables: { friendshipId, status },
       });
-      toast.success(`Friend request ${accept ? "accepted" : "rejected"}`);
-      refetch();
-    } catch (err) {
-      if (err instanceof Error) {
-        toast.error(err.message);
-      } else {
-        toast.error("An unexpected error occurred.");
+
+      toast.success(`Friend request ${status.toLowerCase()}`);
+
+      setFriendRequests((prev) =>
+        prev.filter((req) => req.id !== friendshipId)
+      );
+
+      if (accept) {
+        const updatedFriendship = result.data.respondToFriendRequest;
+
+        setAllUsers((prev) =>
+          prev.map((u) =>
+            u.id === updatedFriendship.requester.id
+              ? {
+                  ...u,
+                  isFriend: true,
+                  pending: false,
+                  friendshipId: updatedFriendship.id,
+                }
+              : u
+          )
+        );
       }
+    } catch (err) {
+      if (err instanceof Error) toast.error(err.message);
+      else toast.error("An unexpected error occurred.");
     }
   };
 

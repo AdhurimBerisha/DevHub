@@ -65,6 +65,7 @@ export const userTypeDefs = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     isFriend: Boolean
+    friendshipId: ID
 
     # 👇 Relationships
     friendRequestsSent: [Friendship!]!

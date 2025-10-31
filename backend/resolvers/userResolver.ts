@@ -38,14 +38,21 @@ export const userResolver = {
         },
       });
 
-      const friendIds = friendships.map((f) =>
-        f.requesterId === context.user.id ? f.receiverId : f.requesterId
-      );
+      return allUsers
+        .filter((u) => u.id !== context.user.id)
+        .map((u) => {
+          const friendship = friendships.find(
+            (f) =>
+              (f.requesterId === context.user.id && f.receiverId === u.id) ||
+              (f.receiverId === context.user.id && f.requesterId === u.id)
+          );
 
-      return allUsers.map((u) => ({
-        ...u,
-        isFriend: friendIds.includes(u.id),
-      }));
+          return {
+            ...u,
+            isFriend: Boolean(friendship),
+            friendshipId: friendship?.id || null,
+          };
+        });
     },
 
     user: async (_: unknown, { id }: { id: string }) => {

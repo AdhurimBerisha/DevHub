@@ -195,7 +195,6 @@ export default function Profile() {
   const stats = calculateStats();
   const userPosts = postsData?.posts || [];
 
-  // Pagination logic
   const totalPages = Math.ceil(userPosts.length / POSTS_PER_PAGE);
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
