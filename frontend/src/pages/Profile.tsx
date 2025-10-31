@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
 
 const POSTS_PER_PAGE = 5;
@@ -22,6 +22,19 @@ const POSTS_PER_PAGE = 5;
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
     currentUser {
+      id
+      email
+      username
+      role
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const GET_USER_QUERY = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) {
       id
       email
       username
@@ -65,24 +78,29 @@ const UPDATE_USER = gql`
 export default function Profile() {
   const { toast } = useToast();
   const client = useApolloClient();
+  const navigate = useNavigate();
+  const { id } = useParams(); // user id from URL
+  const isOwnProfile = !id; // if no id, this is the current user
+
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-  });
+  const [formData, setFormData] = useState({ username: "", email: "" });
   const [currentPage, setCurrentPage] = useState(1);
 
-  const navigate = useNavigate();
-
+  // Choose query based on whether it's your own profile or someone else's
   const {
     loading: userLoading,
     error: userError,
     data: userData,
-  } = useQuery(GET_CURRENT_USER, { fetchPolicy: "network-only" });
+  } = useQuery(isOwnProfile ? GET_CURRENT_USER : GET_USER_QUERY, {
+    variables: isOwnProfile ? {} : { id },
+    fetchPolicy: "network-only",
+  });
+
+  const userId = isOwnProfile ? userData?.currentUser?.id : userData?.user?.id;
 
   const { loading: postsLoading, data: postsData } = useQuery(GET_USER_POSTS, {
-    variables: { authorId: userData?.currentUser?.id },
-    skip: !userData?.currentUser?.id,
+    variables: { authorId: userId },
+    skip: !userId,
     fetchPolicy: "network-only",
   });
 
@@ -90,16 +108,13 @@ export default function Profile() {
     refetchQueries: [{ query: GET_CURRENT_USER }],
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await updateUser({
         variables: {
           id: userData.currentUser.id,
-          input: {
-            username: formData.username,
-            email: formData.email,
-          },
+          input: { username: formData.username, email: formData.email },
         },
       });
       toast({
@@ -117,13 +132,13 @@ export default function Profile() {
     }
   };
 
-  const formatDate = (dateString) =>
+  const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
       year: "numeric",
     });
 
-  const formatPostDate = (dateString) =>
+  const formatPostDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("en-US", {
       month: "2-digit",
       day: "2-digit",
@@ -169,29 +184,12 @@ export default function Profile() {
             Error loading profile
           </h2>
           <p className="text-muted-foreground">{userError.message}</p>
-          <p className="text-sm text-muted-foreground mt-4">
-            Make sure you're logged in and try refreshing the page.
-          </p>
         </Card>
       </div>
     );
   }
 
-  const user = userData?.currentUser;
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 max-w-md">
-          <h2 className="text-xl font-bold mb-2">Not logged in</h2>
-          <p className="text-muted-foreground">
-            Please log in to view your profile.
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
+  const user = isOwnProfile ? userData?.currentUser : userData?.user;
   const stats = calculateStats();
   const userPosts = postsData?.posts || [];
 
@@ -212,67 +210,69 @@ export default function Profile() {
                 <User className="h-16 w-16" />
               </div>
 
-              <Dialog
-                open={open}
-                onOpenChange={(isOpen) => {
-                  setOpen(isOpen);
-                  if (isOpen)
-                    setFormData({ username: user.username, email: user.email });
-                }}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="absolute bottom-0 right-0 gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit Profile
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                  <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
-                    <DialogDescription>
-                      Make changes to your profile here. Click save when you're
-                      done.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        value={formData.username}
-                        onChange={(e) =>
-                          setFormData({ ...formData, username: e.target.value })
-                        }
-                      />
+              {/* Edit only for own profile */}
+              {isOwnProfile && (
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute bottom-0 right-0 gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>Edit Profile</DialogTitle>
+                      <DialogDescription>
+                        Make changes to your profile here. Click save when
+                        you're done.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                          id="username"
+                          value={formData.username}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              username: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              email: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSubmit}>Save changes</Button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={handleSubmit}>Save changes</Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             <h1 className="mb-2 text-3xl font-bold">{user.username}</h1>

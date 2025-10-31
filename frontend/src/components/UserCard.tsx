@@ -12,37 +12,54 @@ interface UserCardProps {
   };
   onMessage?: (id: string) => void;
   onToggleFriend?: (id: string) => void;
+  onClick?: () => void; // ← card click
 }
 
 export const UserCard = ({
   user,
   onMessage,
   onToggleFriend,
+  onClick,
 }: UserCardProps) => {
   return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
+    <div
+      className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
+      onClick={onClick} // whole card clickable
+    >
       <div className="flex items-center gap-4">
+        {/* Avatar */}
         <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
           {user.username.charAt(0).toUpperCase()}
         </div>
+
+        {/* Username */}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-foreground truncate">
             {user.username}
           </h3>
         </div>
+
+        {/* Buttons */}
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onMessage?.(user.id)}
+            onClick={(e) => {
+              e.stopPropagation(); // prevent navigating to profile
+              onMessage?.(user.id);
+            }}
             title="Send message"
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
+
           <Button
             variant={user.isFriend ? "secondary" : "default"}
             size="icon"
-            onClick={() => onToggleFriend?.(user.id)}
+            onClick={(e) => {
+              e.stopPropagation(); // prevent navigating to profile
+              onToggleFriend?.(user.id);
+            }}
             title={user.isFriend ? "Remove friend" : "Add friend"}
           >
             {user.isFriend ? (

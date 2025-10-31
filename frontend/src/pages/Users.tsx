@@ -157,6 +157,10 @@ export default function Users() {
     }
   };
 
+  const handleGoToProfile = (userId: string) => {
+    navigate(`/profile/${userId}`);
+  };
+
   const handleMessage = (userId: string) => {
     navigate(`/chat/${userId}`);
   };
@@ -229,6 +233,7 @@ export default function Users() {
                     user={user}
                     onMessage={handleMessage}
                     onToggleFriend={() => handleToggleFriend(user)}
+                    onClick={() => handleGoToProfile(user.id)}
                   />
                 ))}
               </div>
