@@ -57,7 +57,6 @@ const server = new ApolloServer({
             where: { id: post.communityId },
             select: { id: true, name: true, slug: true },
           });
-          console.log("Fetched community for post:", post.id, community);
           return community;
         } catch (error) {
           console.error("Error fetching community for post:", error);

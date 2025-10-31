@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -37,6 +38,7 @@ const mainItems = [
   { title: "Tags", url: "/tags", icon: Tag },
   { title: "Communities", url: "/communities", icon: Users },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
+  { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Create Post", url: "/create-post", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

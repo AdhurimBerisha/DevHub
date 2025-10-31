@@ -23,6 +23,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
                     <Route path="/posts" element={<Posts />} />
                     <Route path="/post/:id" element={<PostDetail />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/chat" element={<Chat />} />
                     <Route
                       path="/create-post"
                       element={
