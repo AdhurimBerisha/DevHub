@@ -347,7 +347,6 @@ export default function Profile() {
                       {post.content}
                     </p>
                     <div className="flex gap-4 text-sm text-muted-foreground">
-                      <span>👁️ {post.viewCount}</span>
                       <span>❤️ {likes}</span>
                       <span>💬 {comments}</span>
                     </div>
