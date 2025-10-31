@@ -37,12 +37,27 @@ export const CREATE_USER_MUTATION = gql`
 `;
 
 export const GET_USERS_QUERY = gql`
-  query GetUsers {
+  query GetUsersAndFriendRequests {
     users {
       id
       email
       username
       role
+      isFriend
+      createdAt
+      updatedAt
+    }
+    friendRequests {
+      id
+      status
+      requester {
+        id
+        username
+      }
+      receiver {
+        id
+        username
+      }
       createdAt
       updatedAt
     }

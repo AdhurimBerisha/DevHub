@@ -55,7 +55,6 @@ export default function Tags() {
     return sortTags(filtered, sortBy);
   }, [popularTags, searchQuery, sortBy]);
 
-  // Reset page to 1 whenever search or sort changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortBy]);

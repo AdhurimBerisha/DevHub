@@ -24,6 +24,7 @@ export interface User {
   role: "USER" | "ADMIN";
   createdAt: string;
   updatedAt: string;
+  isFriend: boolean;
 }
 
 export interface Comment {

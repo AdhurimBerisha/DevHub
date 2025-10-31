@@ -15,6 +15,7 @@ import { communitiesResolver } from "./resolvers/communitiesResolver.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { adminResolver } from "./resolvers/adminResolver.js";
 import { adminTypeDefs } from "./schema/adminSchema.js";
+import { friendResolver } from "./resolvers/friendsResolver.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -39,12 +40,14 @@ const server = new ApolloServer({
       ...postsResolver.Query,
       ...communitiesResolver.Query,
       ...adminResolver.Query,
+      ...friendResolver.Query,
     },
     Mutation: {
       ...userResolver.Mutation,
       ...postsResolver.Mutation,
       ...communitiesResolver.Mutation,
       ...adminResolver.Mutation,
+      ...friendResolver.Mutation,
     },
     Post: {
       community: async (post: any) => {

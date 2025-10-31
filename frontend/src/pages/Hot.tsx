@@ -21,14 +21,12 @@ export default function Hot() {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading posts</p>;
 
-  // Sort posts by likes
   const sortedPosts = [...(data?.posts ?? [])].sort(
     (a, b) =>
       (b.votes.filter((v) => v.value === 1).length || 0) -
       (a.votes.filter((v) => v.value === 1).length || 0)
   );
 
-  // Pagination logic
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
   const paginatedPosts = sortedPosts.slice(startIndex, endIndex);

@@ -8,33 +8,52 @@ export const userTypeDefs = gql`
     ADMIN
   }
 
+  enum FriendshipStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+  }
+
   type Query {
     hello: String
     users: [User!]!
     user(id: ID!): User
     currentUser: User
-  }
 
-  extend type Query {
+    # Posts & related queries
     posts(
       limit: Int
       offset: Int
       published: Boolean
       communityId: ID
-      authorId: ID # ✅ add this line
+      authorId: ID
     ): [Post!]!
     post(id: ID!): Post
     tags: [Tag!]!
     popularTags: [Tag!]!
     tag(id: ID!): Tag
     comments(postId: ID!): [Comment!]!
+
+    # 👇 Friendship-related queries
+    friendships: [Friendship!]!
+    friends(userId: ID!): [User!]!
+    friendRequests: [Friendship!]!
   }
 
   type Mutation {
+    # User-related
     createUser(input: CreateUserInput!): AuthResponse!
     updateUser(id: ID!, input: UpdateUserInput!): User!
     deleteUser(id: ID!): Boolean!
     login(input: LoginInput!): LoginResponse!
+
+    # 👇 Friendship-related mutations
+    sendFriendRequest(receiverId: ID!): Friendship!
+    respondToFriendRequest(
+      friendshipId: ID!
+      status: FriendshipStatus!
+    ): Friendship!
+    removeFriend(friendshipId: ID!): Boolean!
   }
 
   type User {
@@ -43,6 +62,20 @@ export const userTypeDefs = gql`
     username: String!
     role: UserRole!
     gender: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    isFriend: Boolean
+
+    # 👇 Relationships
+    friendRequestsSent: [Friendship!]!
+    friendRequestsReceived: [Friendship!]!
+  }
+
+  type Friendship {
+    id: ID!
+    requester: User!
+    receiver: User!
+    status: FriendshipStatus!
     createdAt: DateTime!
     updatedAt: DateTime!
   }

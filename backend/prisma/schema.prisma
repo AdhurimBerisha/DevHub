@@ -12,6 +12,12 @@ enum UserRole {
   ADMIN
 }
 
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -23,34 +29,35 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  posts                  Post[]            @relation("UserPosts")
-  comments               Comment[]         @relation("UserComments")
-  votes                  Vote[]            @relation("UserVotes")
-  communitiesOwned       Community[]       @relation("CommunityOwner")
-  communityMemberships   CommunityMember[] @relation("Memberships")
+  posts                Post[]            @relation("UserPosts")
+  comments             Comment[]         @relation("UserComments")
+  votes                Vote[]            @relation("UserVotes")
+  communitiesOwned     Community[]       @relation("CommunityOwner")
+  communityMemberships CommunityMember[] @relation("Memberships")
+
+  // Friendships
+  friendRequestsSent     Friendship[] @relation("FriendRequestsSent")
+  friendRequestsReceived Friendship[] @relation("FriendRequestsReceived")
 
   @@map("users")
 }
 
 model Post {
-  id        String    @id @default(cuid())
-  title     String
-  content   String
-  authorId  String
-  author    User      @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
-  tags      PostTag[]
-  comments  Comment[]
-  votes     Vote[]
-  published Boolean   @default(false)
-  featured  Boolean   @default(false)
-  viewCount Int       @default(0)
-
-  // Community relation
+  id          String     @id @default(cuid())
+  title       String
+  content     String
+  authorId    String
+  author      User       @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  tags        PostTag[]
+  comments    Comment[]
+  votes       Vote[]
+  published   Boolean    @default(false)
+  featured    Boolean    @default(false)
+  viewCount   Int        @default(0)
   communityId Int?
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@map("posts")
 }
@@ -97,7 +104,7 @@ model Vote {
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  value     Int      // 1 = upvote, -1 = downvote
+  value     Int // 1 = upvote, -1 = downvote
   createdAt DateTime @default(now())
 
   @@unique([userId, postId])
@@ -116,7 +123,7 @@ model Community {
   members     CommunityMember[]
   posts       Post[]
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @default(now()) @updatedAt
+  updatedAt   DateTime          @updatedAt
 }
 
 model CommunityMember {
@@ -129,4 +136,17 @@ model CommunityMember {
   createdAt   DateTime  @default(now())
 
   @@unique([userId, communityId])
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requester   User             @relation("FriendRequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId String
+  receiver    User             @relation("FriendRequestsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId  String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([requesterId, receiverId])
 }

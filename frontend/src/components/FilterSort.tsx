@@ -90,7 +90,6 @@ export function FilterSort({
   );
 }
 
-// Preset filter configurations
 export const POST_SORT_OPTIONS: FilterCategory[] = [
   {
     id: "trending",
@@ -166,7 +165,6 @@ export function sortPosts(posts: Post[], sortValue: string): Post[] {
   }
 }
 
-// Utility function to sort tags
 export function sortTags(tags: Tag[], sortValue: string): Tag[] {
   const sorted = [...tags];
 

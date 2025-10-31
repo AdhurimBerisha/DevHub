@@ -13,24 +13,39 @@ export const userResolver = {
   Query: {
     hello: () => "Hello from GraphQL!",
 
-    users: async () => {
-      try {
-        return prisma.user.findMany({
-          orderBy: { createdAt: "desc" },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            role: true,
-            gender: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        throw new Error("Failed to fetch users");
-      }
+    users: async (_: unknown, __: unknown, context: { user: any }) => {
+      if (!context.user) throw new Error("Unauthorized");
+
+      const allUsers = await prisma.user.findMany({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          gender: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      const friendships = await prisma.friendship.findMany({
+        where: {
+          OR: [
+            { requesterId: context.user.id, status: "ACCEPTED" },
+            { receiverId: context.user.id, status: "ACCEPTED" },
+          ],
+        },
+      });
+
+      const friendIds = friendships.map((f) =>
+        f.requesterId === context.user.id ? f.receiverId : f.requesterId
+      );
+
+      return allUsers.map((u) => ({
+        ...u,
+        isFriend: friendIds.includes(u.id),
+      }));
     },
 
     user: async (_: unknown, { id }: { id: string }) => {
