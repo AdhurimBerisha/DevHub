@@ -33,18 +33,20 @@ export function ConversationItem({
           <h3 className="text-sm font-semibold text-foreground truncate">
             {conversation.name}
           </h3>
+          <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
             {conversation.timestamp}
           </span>
+          {conversation.unread && conversation.unread > 0 && (
+            <div className="inline-flex items-center justify-center min-w-[20px] h-5 px-2 rounded-full bg-primary text-xs font-medium text-primary-foreground">
+              {conversation.unread > 99 ? "99+" : conversation.unread}
+            </div>
+          )}
+          </div>
         </div>
         <p className="text-sm text-muted-foreground truncate">
           {conversation.lastMessage}
         </p>
-        {conversation.unread && (
-          <div className="mt-2 inline-flex items-center justify-center h-5 px-2 rounded-full bg-primary text-xs font-medium text-primary-foreground">
-            {conversation.unread}
-          </div>
-        )}
       </div>
     </button>
   );

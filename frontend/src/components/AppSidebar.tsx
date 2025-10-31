@@ -31,7 +31,10 @@ import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useQuery } from "@apollo/client";
+import { GET_CONVERSATIONS_QUERY } from "@/graphql/chat";
+import { useEffect, useState } from "react";
+import { socketService } from "@/lib/socket";
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
@@ -51,10 +54,63 @@ const adminItems = [
 
 export function AppSidebar() {
   const { open } = useSidebar();
-  const { user, isAuthenticated, isAdmin } = useAuthStore();
+  const { user, isAuthenticated, isAdmin, token } = useAuthStore();
   const { signOut } = useAuth();
   const { isDark, toggle } = useTheme();
   const client = useApolloClient();
+
+  const { data: conversationsData, refetch: refetchConversations } = useQuery(
+    GET_CONVERSATIONS_QUERY,
+    {
+      skip: !token || !isAuthenticated,
+    }
+  );
+
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (conversationsData?.conversations) {
+      const total = conversationsData.conversations.reduce(
+        (total: number, conv: { unreadCount?: number }) =>
+          total + (conv.unreadCount || 0),
+        0
+      );
+      setTotalUnreadCount(total);
+    }
+  }, [conversationsData]);
+
+  useEffect(() => {
+    if (!token || !isAuthenticated) return;
+    if (!socketService.isConnected()) {
+      socketService.connect(token);
+    }
+
+    const handleNewMessage = (message: {
+      conversationId: string;
+      senderId: string;
+    }) => {
+      if (message.senderId !== user?.id) {
+        setTotalUnreadCount((prev) => prev + 1);
+        refetchConversations();
+      }
+    };
+
+    socketService.onMessage(handleNewMessage);
+
+    return () => {
+      socketService.offMessage(handleNewMessage);
+    };
+  }, [token, isAuthenticated, refetchConversations, user?.id]);
+
+  useEffect(() => {
+    if (!token || !isAuthenticated) return;
+
+    const interval = setInterval(() => {
+      refetchConversations();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [token, isAuthenticated, refetchConversations]);
 
   const handleSignOut = async () => {
     await client.clearStore();
@@ -83,9 +139,14 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink to={item.url} end>
+                    <NavLink to={item.url} end className="relative">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                      {item.title === "Chat" && totalUnreadCount > 0 && (
+                        <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                          {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

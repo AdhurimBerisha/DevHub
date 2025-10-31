@@ -50,6 +50,7 @@ const App = () => (
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/profile/:id" element={<Profile />} />
                     <Route path="/chat" element={<Chat />} />
+                    <Route path="/chat/:userId" element={<Chat />} />
                     <Route path="/users" element={<Users />} />
                     <Route
                       path="/create-post"

@@ -1,74 +1,81 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
-import { ApolloServer } from "@apollo/server";
+import express from "express";
 import { expressMiddleware } from "@as-integrations/express4";
 import { createServer } from "http";
-
-import express from "express";
+import { Server as SocketIOServer } from "socket.io";
 import cors from "cors";
-import { userTypeDefs } from "./schema/userSchema.js";
-import { userResolver } from "./resolvers/userResolver.js";
-import { postsTypeDefs } from "./schema/postsSchema.js";
-import { postsResolver } from "./resolvers/postsResolver.js";
-import { communitiesTypeDefs } from "./schema/communitiesSchema.js";
-import { communitiesResolver } from "./resolvers/communitiesResolver.js";
+
+import { createApolloServer } from "./config/apollo.js";
+import { prisma, connectDB } from "./config/database.js";
+import { createSocketAuthMiddleware } from "./socket/auth.js";
+import { setupSocketHandlers } from "./socket/handlers.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
-import { adminResolver } from "./resolvers/adminResolver.js";
-import { adminTypeDefs } from "./schema/adminSchema.js";
-import { friendResolver } from "./resolvers/friendsResolver.js";
 
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4001;
 
-const prisma = new PrismaClient();
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
+  : ["http://localhost:5173", "http://localhost:8080"];
 
-const connectDB = async () => {
-  try {
-    await prisma.$connect();
-    console.log("✅ Database connection established successfully");
-  } catch (error) {
-    console.error("❌ Database connection failed:", error);
-  }
+const corsOptions = cors<cors.CorsRequest>({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.some(
+        (allowed) => origin === allowed || origin.startsWith(allowed)
+      )
+    ) {
+      return callback(null, true);
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin);
+      if (isLocalhost) return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+});
+
+const socketCorsOptions = {
+  origin: (
+    origin: string | undefined,
+    callback: (error: Error | null, success?: boolean) => void
+  ) => {
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.some(
+        (allowed) => origin === allowed || origin.startsWith(allowed)
+      )
+    ) {
+      return callback(null, true);
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin);
+      if (isLocalhost) return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST"],
+  credentials: true,
 };
 
-const server = new ApolloServer({
-  typeDefs: [userTypeDefs, postsTypeDefs, communitiesTypeDefs, adminTypeDefs],
-  resolvers: {
-    Query: {
-      ...userResolver.Query,
-      ...postsResolver.Query,
-      ...communitiesResolver.Query,
-      ...adminResolver.Query,
-      ...friendResolver.Query,
-    },
-    Mutation: {
-      ...userResolver.Mutation,
-      ...postsResolver.Mutation,
-      ...communitiesResolver.Mutation,
-      ...adminResolver.Mutation,
-      ...friendResolver.Mutation,
-    },
-    Post: {
-      community: async (post: any) => {
-        if (!post.communityId) {
-          console.log("Post has no communityId:", post.id);
-          return null;
-        }
-        try {
-          const community = await prisma.community.findUnique({
-            where: { id: post.communityId },
-            select: { id: true, name: true, slug: true },
-          });
-          return community;
-        } catch (error) {
-          console.error("Error fetching community for post:", error);
-          return null;
-        }
-      },
-    },
-  },
+const io = new SocketIOServer(httpServer, {
+  cors: socketCorsOptions,
 });
+
+const server = createApolloServer(prisma);
+
+io.use(createSocketAuthMiddleware(prisma));
+
+setupSocketHandlers(io, prisma);
 
 const startServer = async () => {
   await connectDB();
@@ -78,7 +85,7 @@ const startServer = async () => {
 
   app.use(
     "/graphql",
-    cors<cors.CorsRequest>(),
+    corsOptions,
     express.json(),
     expressMiddleware(server, {
       context: async ({ req }: { req: any }) => ({
@@ -99,6 +106,7 @@ const startServer = async () => {
   console.log(
     `📊 GraphQL Playground available at http://localhost:${PORT}/graphql`
   );
+  console.log(`💬 Socket.IO server ready on port ${PORT}`);
 };
 
 startServer().catch((error) => {
@@ -106,16 +114,12 @@ startServer().catch((error) => {
   process.exit(1);
 });
 
-process.on("SIGINT", async () => {
+const shutdown = async () => {
   console.log("🛑 Shutting down gracefully...");
   await server.stop();
   await prisma.$disconnect();
   process.exit(0);
-});
+};
 
-process.on("SIGTERM", async () => {
-  console.log("🛑 Shutting down gracefully...");
-  await server.stop();
-  await prisma.$disconnect();
-  process.exit(0);
-});
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

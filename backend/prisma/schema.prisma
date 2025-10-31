@@ -39,6 +39,11 @@ model User {
   friendRequestsSent     Friendship[] @relation("FriendRequestsSent")
   friendRequestsReceived Friendship[] @relation("FriendRequestsReceived")
 
+  // Chat
+  conversations    ConversationParticipant[]
+  sentMessages     Message[]                 @relation("MessageSender")
+  receivedMessages Message[]                 @relation("MessageReceiver")
+
   @@map("users")
 }
 
@@ -149,4 +154,44 @@ model Friendship {
   updatedAt   DateTime         @updatedAt
 
   @@unique([requesterId, receiverId])
+}
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  name         String?
+  isGroup      Boolean                   @default(false)
+  participants ConversationParticipant[]
+  messages     Message[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  joinedAt       DateTime     @default(now())
+
+  @@unique([userId, conversationId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  receiver       User?        @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  readAt         DateTime?
+
+  @@map("messages")
 }

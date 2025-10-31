@@ -79,14 +79,13 @@ export default function Profile() {
   const { toast } = useToast();
   const client = useApolloClient();
   const navigate = useNavigate();
-  const { id } = useParams(); // user id from URL
-  const isOwnProfile = !id; // if no id, this is the current user
+  const { id } = useParams();
+  const isOwnProfile = !id;
 
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({ username: "", email: "" });
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Choose query based on whether it's your own profile or someone else's
   const {
     loading: userLoading,
     error: userError,

@@ -19,7 +19,7 @@ export default function Home() {
   const { data: tagsData, loading: tagsLoading } = useQuery(GET_POPULAR_TAGS);
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="mb-6">
           <Button asChild className="gap-2 rounded-full">
