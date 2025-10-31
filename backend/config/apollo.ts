@@ -59,15 +59,21 @@ export function createApolloServer(prisma: PrismaClient) {
               },
             });
             if (!community) return null;
-            const memberCount = await prisma.communityMember.count({
-              where: { communityId: post.communityId },
-            });
+            let memberCount = 0;
+            try {
+              memberCount = await prisma.communityMember.count({
+                where: { communityId: post.communityId },
+              });
+            } catch (err) {
+              console.error("Error counting community members:", err);
+              memberCount = 0;
+            }
             return {
               id: community.id,
               name: community.name,
               slug: community.slug,
               description: community.description,
-              memberCount,
+              memberCount: memberCount || 0, // Ensure it's always a number, never null/undefined
             };
           } catch (error) {
             console.error("Error fetching community for post:", error);
