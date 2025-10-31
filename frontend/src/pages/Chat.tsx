@@ -463,7 +463,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-[93vh] bg-background">
       {/* Main Chat Area */}
       <div className="ml-0  flex-1 flex relative">
         {/* Conversations List */}
@@ -743,34 +743,6 @@ export default function Chat() {
                   A community for React developers to share knowledge, ask
                   questions, and discuss best practices.
                 </p>
-              </div>
-
-              <div className="bg-card rounded-lg p-4 border border-border">
-                <h4 className="text-sm font-semibold text-foreground mb-3">
-                  Members
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-                      SC
-                    </div>
-                    <span className="text-sm text-foreground">Sarah Chen</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-                      MB
-                    </div>
-                    <span className="text-sm text-foreground">
-                      Michael Brown
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold">
-                      AB
-                    </div>
-                    <span className="text-sm text-foreground">You</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
