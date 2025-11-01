@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@apollo/client";
 import { ConversationItem } from "@/components/ConversationItem";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Search, MoreVertical, UserPlus, X } from "lucide-react";
 import { socketService } from "@/lib/socket";
 import { useAuthStore } from "@/stores/authStore";
+import { useChatStore, Conversation, Message } from "@/stores/chatStore";
 import { format } from "date-fns";
 import { GET_USERS_QUERY } from "@/graphql/auth";
 import {
@@ -16,27 +17,6 @@ import {
   MARK_MESSAGES_AS_READ_MUTATION,
 } from "@/graphql/chat";
 import { useMutation, useApolloClient } from "@apollo/client";
-
-interface Message {
-  id: string;
-  content: string;
-  senderId: string;
-  sender: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  conversationId: string;
-  createdAt: string;
-}
-
-interface Conversation {
-  id: string;
-  name: string;
-  lastMessage: string;
-  timestamp: string;
-  unread?: number;
-}
 
 interface UserListItem {
   id: string;
@@ -52,18 +32,27 @@ export default function Chat() {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
   const client = useApolloClient();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<string | null>(
-    null
-  );
-  const [messages, setMessages] = useState<Record<string, Message[]>>({});
-  const [message, setMessage] = useState("");
-  const [showConversations, setShowConversations] = useState(false);
-  const [showUserList, setShowUserList] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [typingUsers, setTypingUsers] = useState<
-    Record<string, { userId: string; username: string }>
-  >({});
+  const {
+    conversations,
+    activeConversation,
+    messages,
+    message,
+    showConversations,
+    showUserList,
+    userSearchQuery,
+    typingUsers,
+    setConversations,
+    setActiveConversation,
+    setMessages,
+    addMessage,
+    setMessage,
+    setShowConversations,
+    setShowUserList,
+    setUserSearchQuery,
+    setTypingUser,
+    updateConversation,
+    addConversation,
+  } = useChatStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -155,33 +144,20 @@ export default function Chat() {
     socketService.connect(token);
 
     const handleNewMessage = (newMessage: Message) => {
-      setMessages((prev) => {
-        const conversationMessages = prev[newMessage.conversationId] || [];
-        if (conversationMessages.some((m) => m.id === newMessage.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [newMessage.conversationId]: [...conversationMessages, newMessage],
-        };
-      });
+      addMessage(newMessage);
 
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === newMessage.conversationId
-            ? {
-                ...conv,
-                lastMessage: newMessage.content,
-                timestamp: format(new Date(newMessage.createdAt), "h:mm a"),
-                unread:
-                  activeConversation !== newMessage.conversationId &&
-                  newMessage.senderId !== user?.id
-                    ? (conv.unread || 0) + 1
-                    : conv.unread,
-              }
-            : conv
-        )
+      const conversation = conversations.find(
+        (c) => c.id === newMessage.conversationId
       );
+      updateConversation(newMessage.conversationId, {
+        lastMessage: newMessage.content,
+        timestamp: format(new Date(newMessage.createdAt), "h:mm a"),
+        unread:
+          activeConversation !== newMessage.conversationId &&
+          newMessage.senderId !== user?.id
+            ? (conversation?.unread || 0) + 1
+            : conversation?.unread,
+      });
     };
 
     const handleTyping = (data: {
@@ -190,21 +166,15 @@ export default function Chat() {
       isTyping: boolean;
     }) => {
       if (activeConversation) {
-        setTypingUsers((prev) => {
-          if (data.isTyping) {
-            return {
-              ...prev,
-              [activeConversation]: {
+        setTypingUser(
+          activeConversation,
+          data.isTyping
+            ? {
                 userId: data.userId,
                 username: data.username,
-              },
-            };
-          } else {
-            const updated = { ...prev };
-            delete updated[activeConversation];
-            return updated;
-          }
-        });
+              }
+            : null
+        );
       }
     };
 
@@ -221,7 +191,14 @@ export default function Chat() {
       socketService.offTyping(handleTyping);
       socketService.offError(handleError);
     };
-  }, [token, activeConversation, user?.id]);
+  }, [
+    token,
+    activeConversation,
+    user?.id,
+    conversations,
+    addMessage,
+    updateConversation,
+  ]);
 
   useEffect(() => {
     if (userId && socketService.isConnected() && user?.id) {
@@ -231,21 +208,15 @@ export default function Chat() {
       }) => {
         const { conversationId, otherUser } = data;
 
-        setConversations((prev) => {
-          const exists = prev.find((c) => c.id === conversationId);
-          if (exists) {
-            return prev;
-          }
-          return [
-            ...prev,
-            {
-              id: conversationId,
-              name: otherUser.username,
-              lastMessage: "",
-              timestamp: format(new Date(), "h:mm a"),
-            },
-          ];
-        });
+        const exists = conversations.find((c) => c.id === conversationId);
+        if (!exists) {
+          addConversation({
+            id: conversationId,
+            name: otherUser.username,
+            lastMessage: "",
+            timestamp: format(new Date(), "h:mm a"),
+          });
+        }
 
         setActiveConversation(conversationId);
 
@@ -261,7 +232,15 @@ export default function Chat() {
         socketService.offConversationReady(handleConversationReady);
       };
     }
-  }, [userId, token, user?.id, navigate]);
+  }, [
+    userId,
+    token,
+    user?.id,
+    navigate,
+    conversations,
+    addConversation,
+    setActiveConversation,
+  ]);
 
   const { data: conversationData } = useQuery(GET_CONVERSATION_QUERY, {
     variables: { id: activeConversation || "" },
@@ -288,22 +267,13 @@ export default function Chat() {
             createdAt: msg.createdAt,
           })
         );
-        setMessages((prev) => ({
-          ...prev,
-          [data.conversation!.id]: formattedMessages,
-        }));
+        setMessages(data.conversation!.id, formattedMessages);
 
         if (activeConversation) {
           markMessagesAsRead({
             variables: { conversationId: activeConversation },
           }).then(() => {
-            setConversations((prev) =>
-              prev.map((conv) =>
-                conv.id === activeConversation
-                  ? { ...conv, unread: undefined }
-                  : conv
-              )
-            );
+            updateConversation(activeConversation, { unread: undefined });
             client.refetchQueries({ include: [GET_CONVERSATIONS_QUERY] });
           });
         }
@@ -401,21 +371,15 @@ export default function Chat() {
 
       const { conversationId, otherUser } = data;
 
-      setConversations((prev) => {
-        const exists = prev.find((c) => c.id === conversationId);
-        if (exists) {
-          return prev;
-        }
-        return [
-          ...prev,
-          {
-            id: conversationId,
-            name: otherUser.username,
-            lastMessage: "",
-            timestamp: format(new Date(), "h:mm a"),
-          },
-        ];
-      });
+      const exists = conversations.find((c) => c.id === conversationId);
+      if (!exists) {
+        addConversation({
+          id: conversationId,
+          name: otherUser.username,
+          lastMessage: "",
+          timestamp: format(new Date(), "h:mm a"),
+        });
+      }
 
       setActiveConversation(conversationId);
       socketService.joinConversation(conversationId);
@@ -425,11 +389,7 @@ export default function Chat() {
       markMessagesAsRead({
         variables: { conversationId },
       }).then(() => {
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === conversationId ? { ...conv, unread: undefined } : conv
-          )
-        );
+        updateConversation(conversationId, { unread: undefined });
         client.refetchQueries({ include: [GET_CONVERSATIONS_QUERY] });
       });
 
@@ -569,13 +529,9 @@ export default function Chat() {
                         markMessagesAsRead({
                           variables: { conversationId: conversation.id },
                         }).then(() => {
-                          setConversations((prev) =>
-                            prev.map((conv) =>
-                              conv.id === conversation.id
-                                ? { ...conv, unread: undefined }
-                                : conv
-                            )
-                          );
+                          updateConversation(conversation.id, {
+                            unread: undefined,
+                          });
                           client.refetchQueries({
                             include: [GET_CONVERSATIONS_QUERY],
                           });

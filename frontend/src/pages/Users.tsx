@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { GET_USERS_QUERY } from "@/graphql/auth";
 import {
@@ -13,24 +13,25 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { User } from "@/types/graphql";
 import { Pagination } from "@/components/Pagination";
-
-type FriendRequest = {
-  id: string;
-  requester: { id: string; username: string };
-  receiver: { id: string; username: string };
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt: string;
-  updatedAt: string;
-};
+import { useUsersStore, FriendRequest } from "@/stores/usersStore";
 
 export default function Users() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [friendsPage, setFriendsPage] = useState(1);
-  const [othersPage, setOthersPage] = useState(1);
-  const itemsPerPage = 12;
-
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const {
+    searchQuery,
+    friendsPage,
+    othersPage,
+    itemsPerPage,
+    allUsers,
+    friendRequests,
+    setSearchQuery,
+    setFriendsPage,
+    setOthersPage,
+    setAllUsers,
+    setFriendRequests,
+    updateUser,
+    removeFriendRequest,
+    updateFriendRequest,
+  } = useUsersStore();
 
   const navigate = useNavigate();
 
@@ -86,13 +87,11 @@ export default function Users() {
         toast.success("Friend removed");
         await refetch();
 
-        setAllUsers((prev) =>
-          prev.map((u) =>
-            u.id === user.id
-              ? { ...u, isFriend: false, friendshipId: null, pending: false }
-              : u
-          )
-        );
+        updateUser(user.id, {
+          isFriend: false,
+          friendshipId: null,
+          pending: false,
+        });
       } else {
         const result = await sendFriendRequest({
           variables: { receiverId: user.id },
@@ -102,13 +101,10 @@ export default function Users() {
 
         await refetch();
 
-        setAllUsers((prev) =>
-          prev.map((u) =>
-            u.id === user.id
-              ? { ...u, pending: true, friendshipId: newFriendshipId }
-              : u
-          )
-        );
+        updateUser(user.id, {
+          pending: true,
+          friendshipId: newFriendshipId,
+        });
       }
     } catch (err) {
       if (err instanceof Error) toast.error(err.message);
@@ -131,25 +127,16 @@ export default function Users() {
 
       await refetch();
 
-      setFriendRequests((prev) =>
-        prev.filter((req) => req.id !== friendshipId)
-      );
+      removeFriendRequest(friendshipId);
 
       if (accept && result.data?.respondToFriendRequest) {
         const updatedFriendship = result.data.respondToFriendRequest;
 
-        setAllUsers((prev) =>
-          prev.map((u) =>
-            u.id === updatedFriendship.requester.id
-              ? {
-                  ...u,
-                  isFriend: true,
-                  pending: false,
-                  friendshipId: updatedFriendship.id,
-                }
-              : u
-          )
-        );
+        updateUser(updatedFriendship.requester.id, {
+          isFriend: true,
+          pending: false,
+          friendshipId: updatedFriendship.id,
+        });
       }
     } catch (err) {
       if (err instanceof Error) toast.error(err.message);

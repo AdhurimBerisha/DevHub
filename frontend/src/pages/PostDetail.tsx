@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Users } from "lucide-react";
-import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { usePostStore } from "@/stores/postStore";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,10 +31,17 @@ export default function PostDetail() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [commentText, setCommentText] = useState("");
-  const [replyText, setReplyText] = useState<Record<string, string>>({});
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [isSaved, setIsSaved] = useState(false);
+  const {
+    commentText,
+    replyText,
+    replyingTo,
+    isSaved,
+    setCommentText,
+    setReplyText,
+    clearReplyText,
+    setReplyingTo,
+    setIsSaved,
+  } = usePostStore();
 
   const { loading, error, data } = useQuery(GET_POST_QUERY, {
     variables: { id },
@@ -99,7 +106,7 @@ export default function PostDetail() {
       });
 
       if (parentCommentId) {
-        setReplyText((prev) => ({ ...prev, [parentCommentId]: "" }));
+        clearReplyText(parentCommentId);
         setReplyingTo(null);
         toast({ title: "Reply added successfully" });
       } else {
@@ -126,7 +133,7 @@ export default function PostDetail() {
     }
     setReplyingTo(replyingTo === commentId ? null : commentId);
     if (replyingTo !== commentId && !replyText[commentId]) {
-      setReplyText((prev) => ({ ...prev, [commentId]: "" }));
+      setReplyText(commentId, "");
     }
   };
 
@@ -422,10 +429,7 @@ export default function PostDetail() {
                               placeholder="Write a reply..."
                               value={replyText[comment.id] || ""}
                               onChange={(e) =>
-                                setReplyText((prev) => ({
-                                  ...prev,
-                                  [comment.id]: e.target.value,
-                                }))
+                                setReplyText(comment.id, e.target.value)
                               }
                               className="min-h-[80px]"
                             />
@@ -442,10 +446,7 @@ export default function PostDetail() {
                                 variant="ghost"
                                 onClick={() => {
                                   setReplyingTo(null);
-                                  setReplyText((prev) => ({
-                                    ...prev,
-                                    [comment.id]: "",
-                                  }));
+                                  clearReplyText(comment.id);
                                 }}
                               >
                                 Cancel
