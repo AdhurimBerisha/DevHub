@@ -45,7 +45,7 @@ export const UserCard = ({
             variant="ghost"
             size="icon"
             onClick={(e) => {
-              e.stopPropagation(); // prevent navigating to profile
+              e.stopPropagation();
               onMessage?.(user.id);
             }}
             title="Send message"
@@ -57,7 +57,7 @@ export const UserCard = ({
             variant={user.isFriend ? "secondary" : "default"}
             size="icon"
             onClick={(e) => {
-              e.stopPropagation(); // prevent navigating to profile
+              e.stopPropagation();
               onToggleFriend?.(user.id);
             }}
             title={user.isFriend ? "Remove friend" : "Add friend"}
