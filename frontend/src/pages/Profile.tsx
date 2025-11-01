@@ -1,4 +1,5 @@
-import { User, Calendar, Mail, Edit, Loader2 } from "lucide-react";
+import { User, Calendar, Mail, Edit, Loader2, Upload, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
+import { useAuthStore } from "@/stores/authStore";
 
 const POSTS_PER_PAGE = 5;
 
@@ -26,6 +28,7 @@ const GET_CURRENT_USER = gql`
       email
       username
       role
+      avatar
       createdAt
       updatedAt
     }
@@ -39,6 +42,7 @@ const GET_USER_QUERY = gql`
       email
       username
       role
+      avatar
       createdAt
       updatedAt
     }
@@ -86,6 +90,10 @@ export default function Profile() {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({ username: "", email: "" });
   const [currentPage, setCurrentPage] = useState(1);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  const { token } = useAuthStore();
 
   const {
     loading: userLoading,
@@ -93,6 +101,7 @@ export default function Profile() {
     data: userData,
   } = useQuery(isOwnProfile ? GET_CURRENT_USER : GET_USER_QUERY, {
     variables: isOwnProfile ? {} : { id },
+    skip: isOwnProfile && !token, // Skip currentUser query if not authenticated
     fetchPolicy: "network-only",
   });
 
@@ -117,16 +126,135 @@ export default function Profile() {
           username: currentUser.username || "",
           email: currentUser.email || "",
         });
+        setAvatarPreview(null); // Clear preview when dialog opens
       }
     }
   }, [open, userData, isOwnProfile]);
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    const fileInput = document.getElementById(
+      "avatar-upload-dialog"
+    ) as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    if (!file) {
+      if (!avatarPreview) {
+        toast({
+          title: "No file selected",
+          description: "Please select an image to upload.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const BACKEND_URL =
+        import.meta.env.VITE_GRAPHQL_URL?.replace("/graphql", "") ||
+        "http://localhost:4000";
+      const token = useAuthStore.getState().token;
+
+      const response = await fetch(`${BACKEND_URL}/api/upload/avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload avatar");
+      }
+
+      const data = await response.json();
+
+      // Update the user's avatar in the database via GraphQL
+      await updateUser({
+        variables: {
+          id: userData?.currentUser?.id || userData?.user?.id,
+          input: { avatar: data.avatar },
+        },
+      });
+
+      toast({
+        title: "Avatar updated",
+        description: "Your avatar has been successfully updated.",
+      });
+
+      // Refetch user data
+      await client.refetchQueries({ include: "active" });
+
+      // Clear preview
+      setAvatarPreview(null);
+      if (fileInput) fileInput.value = "";
+    } catch (error: unknown) {
+      console.error("Avatar upload error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to upload avatar. Please try again.";
+      toast({
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleCancelAvatarUpload = () => {
+    setAvatarPreview(null);
+    const fileInput = document.getElementById(
+      "avatar-upload-dialog"
+    ) as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const currentUser = isOwnProfile ? userData?.currentUser : userData?.user;
       if (!currentUser) return;
-      
+
       await updateUser({
         variables: {
           id: currentUser.id,
@@ -222,9 +350,34 @@ export default function Profile() {
           <div className="h-32 bg-gradient-to-r from-primary/20 to-accent/20"></div>
           <div className="px-6 pb-6">
             <div className="relative -mt-16 mb-4">
-              <div className="inline-flex h-32 w-32 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground">
-                <User className="h-16 w-16" />
-              </div>
+              <Avatar className="h-32 w-32 border-4 border-card">
+                <AvatarImage src={user?.avatar} alt={user?.username} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
+                  {user?.username?.charAt(0).toUpperCase() || (
+                    <User className="h-16 w-16" />
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90 transition"
+                >
+                  {avatarUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={avatarUploading}
+                  />
+                </label>
+              )}
 
               {/* Edit only for own profile */}
               {isOwnProfile && (
@@ -248,6 +401,88 @@ export default function Profile() {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
+                      {/* Avatar Upload Section */}
+                      <div className="space-y-2">
+                        <Label>Profile Picture</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <Avatar className="h-20 w-20 border-2 border-border">
+                              <AvatarImage
+                                src={avatarPreview || user?.avatar}
+                                alt={user?.username}
+                              />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                                {user?.username?.charAt(0).toUpperCase() || (
+                                  <User className="h-10 w-10" />
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <label htmlFor="avatar-upload-dialog">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full cursor-pointer"
+                                  disabled={avatarUploading}
+                                  onClick={() => {
+                                    document
+                                      .getElementById("avatar-upload-dialog")
+                                      ?.click();
+                                  }}
+                                >
+                                  {avatarPreview
+                                    ? "Change Image"
+                                    : "Choose Image"}
+                                </Button>
+                              </label>
+                              <input
+                                id="avatar-upload-dialog"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleAvatarSelect}
+                                disabled={avatarUploading}
+                              />
+                            </div>
+                            {avatarPreview && (
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={handleAvatarUpload}
+                                  disabled={avatarUploading}
+                                  className="flex-1"
+                                >
+                                  {avatarUploading ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  ) : (
+                                    "Upload"
+                                  )}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCancelAvatarUpload}
+                                  disabled={avatarUploading}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              JPG, PNG or GIF. Max size 5MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
                         <Input

@@ -24,6 +24,7 @@ export const userResolver = {
           username: true,
           role: true,
           gender: true,
+          avatar: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -65,6 +66,7 @@ export const userResolver = {
             username: true,
             role: true,
             gender: true,
+            avatar: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -88,6 +90,7 @@ export const userResolver = {
             username: true,
             role: true,
             gender: true,
+            avatar: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -211,6 +214,7 @@ export const userResolver = {
           password?: string;
           role?: string;
           gender?: string;
+          avatar?: string;
         };
       },
       context: { user: any }
@@ -259,6 +263,7 @@ export const userResolver = {
 
         if (input.role) updateData.role = input.role as "USER" | "ADMIN";
         if (input.gender) updateData.gender = input.gender;
+        if (input.avatar) updateData.avatar = input.avatar;
 
         const updatedUser = await prisma.user.update({
           where: { id },
@@ -269,6 +274,7 @@ export const userResolver = {
             username: true,
             role: true,
             gender: true,
+            avatar: true,
             createdAt: true,
             updatedAt: true,
           },

@@ -10,6 +10,7 @@ import { prisma, connectDB } from "./config/database.js";
 import { createSocketAuthMiddleware } from "./socket/auth.js";
 import { setupSocketHandlers } from "./socket/handlers.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import uploadRouter from "./routes/upload.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -82,6 +83,8 @@ const startServer = async () => {
   await server.start();
 
   app.use(createAuthMiddleware(prisma));
+
+  app.use("/api/upload", corsOptions, uploadRouter);
 
   app.use(
     "/graphql",

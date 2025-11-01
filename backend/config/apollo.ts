@@ -73,7 +73,7 @@ export function createApolloServer(prisma: PrismaClient) {
               name: community.name,
               slug: community.slug,
               description: community.description,
-              memberCount: memberCount || 0, // Ensure it's always a number, never null/undefined
+              memberCount: memberCount || 0,
             };
           } catch (error) {
             console.error("Error fetching community for post:", error);

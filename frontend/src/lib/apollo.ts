@@ -31,9 +31,20 @@ const errorLink = onError(
   ({ graphQLErrors, networkError, operation, forward }) => {
     if (graphQLErrors) {
       graphQLErrors.forEach(({ message, locations, path }) => {
-        console.error(
-          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
-        );
+        // Suppress expected authentication errors when user is not logged in
+        const isAuthError =
+          message === "Unauthorized" ||
+          message === "Not authenticated" ||
+          message.includes("authentication");
+        
+        const token = useAuthStore.getState().token;
+        
+        // Only log if user is authenticated (unexpected error) or if it's not an auth error
+        if (token || !isAuthError) {
+          console.error(
+            `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+          );
+        }
       });
     }
 

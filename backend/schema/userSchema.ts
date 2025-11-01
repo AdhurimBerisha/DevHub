@@ -62,6 +62,7 @@ export const userTypeDefs = gql`
     username: String!
     role: UserRole!
     gender: String
+    avatar: String
     createdAt: DateTime!
     updatedAt: DateTime!
     isFriend: Boolean
@@ -95,6 +96,7 @@ export const userTypeDefs = gql`
     password: String
     role: String
     gender: String
+    avatar: String
   }
 
   input LoginInput {

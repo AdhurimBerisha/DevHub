@@ -15,6 +15,7 @@ import {
   Users2,
   Bookmark,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -32,10 +33,24 @@ import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
-import { useApolloClient, useQuery } from "@apollo/client";
+import { useApolloClient, useQuery, gql } from "@apollo/client";
 import { GET_CONVERSATIONS_QUERY } from "@/graphql/chat";
 import { useEffect, useState } from "react";
 import { socketService } from "@/lib/socket";
+
+const GET_CURRENT_USER = gql`
+  query GetCurrentUser {
+    currentUser {
+      id
+      email
+      username
+      role
+      avatar
+      createdAt
+      updatedAt
+    }
+  }
+`;
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
@@ -61,12 +76,23 @@ export function AppSidebar() {
   const { isDark, toggle } = useTheme();
   const client = useApolloClient();
 
-  const { data: conversationsData, refetch: refetchConversations } = useQuery(
-    GET_CONVERSATIONS_QUERY,
-    {
-      skip: !token || !isAuthenticated,
-    }
-  );
+  // Fetch current user with avatar for sidebar display
+  const { data: currentUserData } = useQuery(GET_CURRENT_USER, {
+    skip: !token || !isAuthenticated,
+    errorPolicy: "ignore",
+    fetchPolicy: "cache-and-network",
+  });
+
+  const {
+    data: conversationsData,
+    refetch: refetchConversations,
+  } = useQuery(GET_CONVERSATIONS_QUERY, {
+    skip: !token || !isAuthenticated,
+    errorPolicy: "ignore", // Ignore errors when skipped
+  });
+
+  // Use currentUser avatar if available, otherwise fallback to store user
+  const displayUser = currentUserData?.currentUser || user;
 
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
@@ -91,9 +117,11 @@ export function AppSidebar() {
       conversationId: string;
       senderId: string;
     }) => {
-      if (message.senderId !== user?.id) {
+      if (message.senderId !== user?.id && refetchConversations) {
         setTotalUnreadCount((prev) => prev + 1);
-        refetchConversations();
+        refetchConversations().catch(() => {
+          // Silently ignore refetch errors
+        });
       }
     };
 
@@ -108,7 +136,14 @@ export function AppSidebar() {
     if (!token || !isAuthenticated) return;
 
     const interval = setInterval(() => {
-      refetchConversations();
+      // Only refetch if still authenticated to prevent errors
+      const currentToken = useAuthStore.getState().token;
+      const currentAuth = useAuthStore.getState().isAuthenticated;
+      if (currentToken && currentAuth && refetchConversations) {
+        refetchConversations().catch(() => {
+          // Silently ignore refetch errors (e.g., when user logs out)
+        });
+      }
     }, 3000);
 
     return () => clearInterval(interval);
@@ -219,13 +254,21 @@ export function AppSidebar() {
                   !open && "justify-center"
                 }`}
               >
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={displayUser?.avatar} alt={displayUser?.username} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    {displayUser?.username?.charAt(0).toUpperCase() || (
+                      <User className="h-4 w-4" />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
                 {open && (
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {user.username}
+                      {displayUser?.username}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {user.email}
+                      {displayUser?.email}
                     </p>
                   </div>
                 )}
