@@ -1,7 +1,9 @@
 # DevHub — Explore Different Blogs
 
+![DevHub Logo](DevHub.png)
 
 A full-stack developer community platform for sharing knowledge, discussing technologies, and connecting with fellow developers. Similar to Reddit or Dev.to, DevHub enables developers to create posts, share tutorials, ask questions, showcase projects, and engage with the community through comments, votes, and real-time messaging
+
 ## Features
 
 - User authentication and profiles — Secure registration/login with JWT authentication, customizable profiles with avatars
@@ -14,12 +16,14 @@ A full-stack developer community platform for sharing knowledge, discussing tech
 ## Tech Stack
 
 **Frontend:**
+
 - React
 - Zustand for global state management
 - Tailwind CSS for UI styling
 - Socket.IO Client for real-time chat
 
 **Backend:**
+
 - Node.js with Express.js
 - GraphQL (Apollo Server 5)
 - Prisma ORM with PostgreSQL
@@ -49,9 +53,10 @@ A full-stack developer community platform for sharing knowledge, discussing tech
 
 This project requires a few environment variables to run properly.
 
-- For the **backend**, create a `.env` file.  
+- For the **backend**, create a `.env` file.
 
 ### backend `.env` variables include:
+
 - `DATABASE_URL` — your_database_url
 - `CLOUDINARY_CLOUD_NAME` — your_cloudinary_cloud_name
 - `CLOUDINARY_API_KEY` — your_api_key
