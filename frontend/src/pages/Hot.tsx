@@ -70,6 +70,7 @@ export default function Hot() {
                 author={post.author.username}
                 date={new Date(post.createdAt).toLocaleDateString()}
                 excerpt={post.content.slice(0, 200) + "..."}
+                image={post.image}
                 tags={post.tags}
                 votes={post.votes}
                 commentsCount={post.commentCount || 0}

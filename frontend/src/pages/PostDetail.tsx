@@ -336,6 +336,17 @@ export default function PostDetail() {
                     {formatDistanceToNow(new Date(post.createdAt))} ago
                   </div>
                   <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
+                  {post.image && (
+                    <div className="mb-4 rounded-lg overflow-hidden border bg-muted/20">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(post.image, '_blank')}
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
                   <div className="flex gap-2 mb-4">
                     {post.tags.map((tag) => (
                       <Badge key={tag.id}>{tag.name}</Badge>

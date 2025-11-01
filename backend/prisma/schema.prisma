@@ -55,6 +55,7 @@ model Post {
   id          String     @id @default(cuid())
   title       String
   content     String
+  image       String?
   authorId    String
   author      User       @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
   tags        PostTag[]

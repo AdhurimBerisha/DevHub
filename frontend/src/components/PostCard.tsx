@@ -25,6 +25,7 @@ interface PostCardProps {
   author: string;
   date: string;
   excerpt: string;
+  image?: string | null;
   tags: { id: string; name: string }[];
   votes: { id: string; value: number; user: { id: string } }[];
   commentsCount: number;
@@ -39,6 +40,7 @@ export function PostCard({
   author,
   date,
   excerpt,
+  image,
   tags,
   votes,
   commentsCount,
@@ -171,6 +173,17 @@ export function PostCard({
           >
             {title}
           </h3>
+
+          {image && (
+            <div className="mb-3 rounded-lg overflow-hidden">
+              <img
+                src={image}
+                alt={title}
+                className="w-full max-h-64 object-contain cursor-pointer"
+                onClick={() => navigate(`/post/${id}`)}
+              />
+            </div>
+          )}
 
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {excerpt}

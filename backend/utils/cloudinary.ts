@@ -14,17 +14,27 @@ if (
 
 export const uploadToCloudinary = async (
   filePath: string,
-  folder: string = "avatars"
+  folder: string = "avatars",
+  transformations?: any[]
 ): Promise<string> => {
   try {
+    const defaultTransformations =
+      folder === "posts"
+        ? [
+            { width: 1200, height: 800, crop: "limit" },
+            { quality: "auto" },
+            { format: "auto" },
+          ]
+        : [
+            { width: 400, height: 400, crop: "fill" },
+            { quality: "auto" },
+            { format: "auto" },
+          ];
+
     const result = await cloudinary.uploader.upload(filePath, {
       folder,
       resource_type: "image",
-      transformation: [
-        { width: 400, height: 400, crop: "fill" },
-        { quality: "auto" },
-        { format: "auto" },
-      ],
+      transformation: transformations || defaultTransformations,
     });
     return result.secure_url;
   } catch (error) {
@@ -44,14 +54,12 @@ export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
 
 export const extractPublicId = (url: string): string | null => {
   try {
-    const match = url.match(/\/([^/]+)\.[^.]+$/);
-    if (match) {
-      const parts = url.split("/");
-      const folderIndex = parts.findIndex((p) => p === "avatars");
-      if (folderIndex !== -1 && folderIndex < parts.length - 1) {
-        const filename = parts[parts.length - 1].split(".")[0];
-        return `avatars/${filename}`;
-      }
+    const parts = url.split("/");
+    const folderIndex = parts.findIndex((p) => p === "avatars" || p === "posts");
+    if (folderIndex !== -1 && folderIndex < parts.length - 1) {
+      const folder = parts[folderIndex];
+      const filename = parts[parts.length - 1].split(".")[0];
+      return `${folder}/${filename}`;
     }
     return null;
   } catch (error) {

@@ -19,6 +19,7 @@ export const GET_POSTS_QUERY = gql`
       communityId
       title
       content
+      image
       published
       featured
       viewCount
@@ -121,6 +122,7 @@ export const GET_SAVED_POSTS_QUERY = gql`
       communityId
       title
       content
+      image
       published
       featured
       viewCount
@@ -163,6 +165,7 @@ export const GET_POST_QUERY = gql`
       id
       title
       content
+      image
       communityId
       published
       featured
@@ -247,6 +250,7 @@ export const CREATE_POST_MUTATION = gql`
         id
         title
         content
+        image
         communityId
         published
         featured
@@ -290,6 +294,7 @@ export const UPDATE_POST_MUTATION = gql`
         id
         title
         content
+        image
         communityId
         published
         featured

@@ -105,6 +105,7 @@ export default function Posts() {
                   author={post.author.username}
                   date={new Date(post.createdAt).toLocaleDateString()}
                   excerpt={post.content.substring(0, 150) + "..."}
+                  image={post.image}
                   tags={post.tags}
                   votes={post.votes}
                   commentsCount={post.commentCount || 0}

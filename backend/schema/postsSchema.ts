@@ -5,6 +5,7 @@ export const postsTypeDefs = gql`
     id: ID!
     title: String!
     content: String!
+    image: String
     author: User!
     community: Community
     communityId: ID
@@ -58,6 +59,7 @@ export const postsTypeDefs = gql`
   input CreatePostInput {
     title: String!
     content: String!
+    image: String
     tagIds: [ID!]
     published: Boolean
     communityId: ID
@@ -66,6 +68,7 @@ export const postsTypeDefs = gql`
   input UpdatePostInput {
     title: String
     content: String
+    image: String
     tagIds: [ID!]
     published: Boolean
     featured: Boolean

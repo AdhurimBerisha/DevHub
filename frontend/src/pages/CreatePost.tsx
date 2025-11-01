@@ -43,6 +43,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuthStore } from "@/stores/authStore";
+import { X, Image as ImageIcon } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
@@ -134,6 +136,9 @@ export default function CreatePost() {
 
   const [tagInput, setTagInput] = useState("");
   const [createTagMutation] = useMutation(CREATE_TAG_MUTATION);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   type LocalCreatePostInput = CreatePostInput & {
     communityId?: string | undefined;
@@ -160,6 +165,13 @@ export default function CreatePost() {
         p.communityId ? String(p.communityId) : undefined
       );
       form.setValue("published", !!p.published);
+      if (p.image) {
+        setImageUrl(p.image);
+        setImagePreview(p.image);
+      } else {
+        setImageUrl(null);
+        setImagePreview(null);
+      }
     }
   }, [postData, form]);
 
@@ -199,6 +211,7 @@ export default function CreatePost() {
       const inputPayload = {
         title: values.title,
         content: values.content,
+        image: imageUrl || undefined,
         tagIds: tagIds.length > 0 ? tagIds : undefined,
         published: values.published,
         communityId: values.communityId,
@@ -211,6 +224,110 @@ export default function CreatePost() {
       }
     } catch (error) {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = async () => {
+    const fileInput = document.getElementById(
+      "post-image-upload"
+    ) as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    if (!file) {
+      if (!imagePreview) {
+        toast({
+          title: "No file selected",
+          description: "Please select an image to upload.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      if (editId) {
+        formData.append("postId", editId);
+      }
+
+      const BACKEND_URL =
+        import.meta.env.VITE_GRAPHQL_URL?.replace("/graphql", "") ||
+        "http://localhost:4000";
+      const token = useAuthStore.getState().token;
+
+      const response = await fetch(`${BACKEND_URL}/api/upload/post-image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+      setImageUrl(data.imageUrl);
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error: unknown) {
+      console.error("Image upload error:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setImageUrl(null);
+    const fileInput = document.getElementById(
+      "post-image-upload"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
     }
   };
 
@@ -284,6 +401,60 @@ export default function CreatePost() {
                     </FormItem>
                   )}
                 />
+
+                <FormItem>
+                  <FormLabel>Post Image (optional)</FormLabel>
+                  <div className="space-y-4">
+                    {imagePreview && (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full max-h-64 object-contain rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={handleRemoveImage}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Input
+                        id="post-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="cursor-pointer"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleImageUpload}
+                        disabled={!imagePreview || imageUploading}
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        {imageUploading ? "Uploading..." : "Upload"}
+                      </Button>
+                      {imagePreview && !imageUrl && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRemoveImage}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <FormDescription>
+                    Upload an image to accompany your post (max 5MB)
+                  </FormDescription>
+                </FormItem>
 
                 <FormField
                   control={form.control}

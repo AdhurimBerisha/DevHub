@@ -350,6 +350,7 @@ export const postsResolver = {
         input: {
           title: string;
           content: string;
+          image?: string;
           tagIds?: string[];
           published?: boolean;
           communityId?: string | number;
@@ -369,6 +370,7 @@ export const postsResolver = {
           data: {
             title: input.title,
             content: input.content,
+            image: input.image || undefined,
             authorId: user.id,
             published: input.published || false,
             communityId: input.communityId
@@ -431,6 +433,7 @@ export const postsResolver = {
         input: {
           title?: string;
           content?: string;
+          image?: string;
           tagIds?: string[];
           published?: boolean;
           featured?: boolean;
@@ -449,6 +452,7 @@ export const postsResolver = {
       const updateData: any = {};
       if (input.title) updateData.title = input.title;
       if (input.content) updateData.content = input.content;
+      if (input.image !== undefined) updateData.image = input.image || null;
       if (input.published !== undefined) updateData.published = input.published;
       if (input.featured !== undefined) updateData.featured = input.featured;
       if (input.communityId !== undefined)
