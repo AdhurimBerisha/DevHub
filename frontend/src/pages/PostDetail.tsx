@@ -260,6 +260,12 @@ export default function PostDetail() {
   const post = data?.post;
   if (!post) return <div>Post not found</div>;
 
+  // Debug: Log post data to check image field
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Post data:', post);
+    console.log('Post image:', post.image);
+  }
+
   const userVote = post.votes.find((v) => v.user.id === user?.id);
   const voteCount = post.votes.reduce((acc, v) => acc + v.value, 0);
 
@@ -336,14 +342,18 @@ export default function PostDetail() {
                     {formatDistanceToNow(new Date(post.createdAt))} ago
                   </div>
                   <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
-                  {post.image && (
+                  {post.image && post.image.trim() !== '' && (
                     <div className="mb-4 rounded-lg overflow-hidden border bg-muted/20">
                       <img
                         src={post.image}
                         alt={post.title}
                         className="w-full max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(post.image, '_blank')}
+                        onClick={() => post.image && window.open(post.image, '_blank')}
                         loading="lazy"
+                        onError={(e) => {
+                          console.error('Failed to load image:', post.image);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     </div>
                   )}
