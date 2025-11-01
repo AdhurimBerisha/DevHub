@@ -26,6 +26,7 @@ import Settings from "./pages/Settings";
 import Chat from "./pages/Chat";
 import Users from "./pages/Users";
 import SavedPosts from "./pages/SavedPosts";
+import CommunityGuide from "./pages/CommunityGuide";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
                       }
                     />
                     <Route path="/tags" element={<Tags />} />
+                    <Route path="/community-guide" element={<CommunityGuide />} />
                     <Route path="/communities" element={<Communities />} />
                     <Route
                       path="/saved"
