@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@apollo/client";
-import { GET_POSTS_QUERY, VOTE_POST_MUTATION } from "@/graphql/posts";
+import {
+  GET_POSTS_QUERY,
+  VOTE_POST_MUTATION,
+  SAVE_POST_MUTATION,
+  UNSAVE_POST_MUTATION,
+} from "@/graphql/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +30,7 @@ interface PostCardProps {
   commentsCount: number;
   readTime?: string;
   community?: { id: string; name: string; slug: string } | null;
+  isSaved?: boolean;
 }
 
 export function PostCard({
@@ -37,6 +43,7 @@ export function PostCard({
   votes,
   commentsCount,
   community,
+  isSaved = false,
 }: PostCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,6 +54,28 @@ export function PostCard({
 
   const [votePost] = useMutation(VOTE_POST_MUTATION, {
     refetchQueries: [{ query: GET_POSTS_QUERY }],
+  });
+
+  const [savePost] = useMutation(SAVE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POSTS_QUERY }],
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [unsavePost] = useMutation(UNSAVE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POSTS_QUERY }],
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleVote = async (value: number) => {
@@ -60,6 +89,29 @@ export function PostCard({
     }
     const newValue = userVote?.value === value ? 0 : value; // toggle vote
     await votePost({ variables: { postId: id, value: newValue } });
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to save posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (isSaved) {
+        await unsavePost({ variables: { postId: id } });
+        toast({ title: "Post unsaved" });
+      } else {
+        await savePost({ variables: { postId: id } });
+        toast({ title: "Post saved" });
+      }
+    } catch (err) {
+      // Error is already handled by onError
+    }
   };
 
   return (
@@ -150,9 +202,17 @@ export function PostCard({
               <Share2 className="h-4 w-4" />
               Share
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
-              <Bookmark className="h-4 w-4" />
-              Save
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-2 text-xs"
+              onClick={handleSave}
+            >
+              <Bookmark
+                className="h-4 w-4"
+                fill={isSaved ? "currentColor" : "none"}
+              />
+              {isSaved ? "Saved" : "Save"}
             </Button>
           </div>
         </div>

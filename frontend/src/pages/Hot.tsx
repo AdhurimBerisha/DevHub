@@ -73,6 +73,8 @@ export default function Hot() {
                 tags={post.tags}
                 votes={post.votes}
                 commentsCount={post.commentCount || 0}
+                community={post.community}
+                isSaved={post.isSaved || false}
               />
             </div>
           ))}

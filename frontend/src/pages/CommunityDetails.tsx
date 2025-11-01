@@ -167,6 +167,7 @@ export default function CommunityDetails() {
                   votes={post.votes}
                   commentsCount={post.commentCount || 0}
                   community={post.community}
+                  isSaved={post.isSaved || false}
                 />
               ))
             )}

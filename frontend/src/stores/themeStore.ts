@@ -61,7 +61,6 @@ export const useThemeStore = create<ThemeStore>()(
             root.classList.remove("dark");
           }
 
-          // Listen for system theme changes
           if (typeof window !== "undefined") {
             const media = window.matchMedia("(prefers-color-scheme: dark)");
             const handler = () => {
@@ -76,12 +75,9 @@ export const useThemeStore = create<ThemeStore>()(
               }
             };
             media.addEventListener("change", handler);
-            // Note: We can't return a cleanup function from onRehydrateStorage,
-            // so we'll handle this in the component using the store
           }
         }
       },
     }
   )
 );
-

@@ -1,7 +1,7 @@
 import { User, Calendar, Mail, Edit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
 import {
@@ -108,12 +108,28 @@ export default function Profile() {
     refetchQueries: [{ query: GET_CURRENT_USER }],
   });
 
+  // Populate form data when dialog opens or user data changes
+  useEffect(() => {
+    if (open && userData) {
+      const currentUser = isOwnProfile ? userData?.currentUser : userData?.user;
+      if (currentUser) {
+        setFormData({
+          username: currentUser.username || "",
+          email: currentUser.email || "",
+        });
+      }
+    }
+  }, [open, userData, isOwnProfile]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const currentUser = isOwnProfile ? userData?.currentUser : userData?.user;
+      if (!currentUser) return;
+      
       await updateUser({
         variables: {
-          id: userData.currentUser.id,
+          id: currentUser.id,
           input: { username: formData.username, email: formData.email },
         },
       });

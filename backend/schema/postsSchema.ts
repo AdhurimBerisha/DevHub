@@ -16,6 +16,7 @@ export const postsTypeDefs = gql`
     published: Boolean!
     featured: Boolean!
     viewCount: Int!
+    isSaved: Boolean # whether the current user has saved this post
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -112,6 +113,7 @@ export const postsTypeDefs = gql`
     popularTags: [Tag!]!
     tag(id: ID!): Tag
     comments(postId: ID!): [Comment!]!
+    savedPosts(limit: Int, offset: Int): [Post!]!
   }
 
   extend type Mutation {
@@ -128,5 +130,9 @@ export const postsTypeDefs = gql`
     # New vote mutations
     votePost(postId: ID!, value: Int!): Vote!
     voteComment(commentId: ID!, value: Int!): Vote
+    
+    # Save/Unsave post mutations
+    savePost(postId: ID!): Boolean!
+    unsavePost(postId: ID!): Boolean!
   }
 `;

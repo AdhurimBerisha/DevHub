@@ -13,6 +13,7 @@ import {
   Settings,
   MessageSquare,
   Users2,
+  Bookmark,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -44,6 +45,7 @@ const mainItems = [
   { title: "Users", url: "/users", icon: Users2 },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
+  { title: "Saved Posts", url: "/saved", icon: Bookmark },
   { title: "Create Post", url: "/create-post", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

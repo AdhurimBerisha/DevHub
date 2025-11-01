@@ -25,6 +25,8 @@ import {
   VOTE_POST_MUTATION,
   DELETE_POST_MUTATION,
   VOTE_COMMENT_MUTATION,
+  SAVE_POST_MUTATION,
+  UNSAVE_POST_MUTATION,
 } from "@/graphql/posts";
 
 export default function PostDetail() {
@@ -37,12 +39,10 @@ export default function PostDetail() {
     commentText,
     replyText,
     replyingTo,
-    isSaved,
     setCommentText,
     setReplyText,
     clearReplyText,
     setReplyingTo,
-    setIsSaved,
   } = usePostStore();
 
   const { loading, error, data } = useQuery(GET_POST_QUERY, {
@@ -96,6 +96,53 @@ export default function PostDetail() {
       });
     },
   });
+
+  const [savePost] = useMutation(SAVE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [unsavePost] = useMutation(UNSAVE_POST_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSavePost = async () => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login to save posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!post) return;
+
+    try {
+      if (post.isSaved) {
+        await unsavePost({ variables: { postId: id } });
+        toast({ title: "Post unsaved" });
+      } else {
+        await savePost({ variables: { postId: id } });
+        toast({ title: "Post saved" });
+      }
+    } catch (err) {
+      // Error is already handled by onError
+    }
+  };
 
   const handleComment = async (parentCommentId?: string) => {
     if (!user) {
@@ -326,16 +373,12 @@ export default function PostDetail() {
                     <Button variant="ghost" size="sm">
                       <Share2 className="h-4 w-4 mr-2" /> Share
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSaved(!isSaved)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={handleSavePost}>
                       <Bookmark
                         className="h-4 w-4 mr-2"
-                        fill={isSaved ? "currentColor" : "none"}
+                        fill={post.isSaved ? "currentColor" : "none"}
                       />
-                      {isSaved ? "Saved" : "Save"}
+                      {post.isSaved ? "Saved" : "Save"}
                     </Button>
                   </div>
 

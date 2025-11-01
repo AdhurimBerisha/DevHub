@@ -44,7 +44,10 @@ interface ChatActions {
   setShowConversations: (show: boolean) => void;
   setShowUserList: (show: boolean) => void;
   setUserSearchQuery: (query: string) => void;
-  setTypingUser: (conversationId: string, user: { userId: string; username: string } | null) => void;
+  setTypingUser: (
+    conversationId: string,
+    user: { userId: string; username: string } | null
+  ) => void;
   clearChat: () => void;
 }
 
@@ -92,8 +95,9 @@ export const useChatStore = create<ChatStore>()(
 
       addMessage: (message) =>
         set((state) => {
-          const conversationMessages = state.messages[message.conversationId] || [];
-          // Check if message already exists to avoid duplicates
+          const conversationMessages =
+            state.messages[message.conversationId] || [];
+
           if (conversationMessages.some((m) => m.id === message.id)) {
             return state;
           }
@@ -136,4 +140,3 @@ export const useChatStore = create<ChatStore>()(
     }
   )
 );
-

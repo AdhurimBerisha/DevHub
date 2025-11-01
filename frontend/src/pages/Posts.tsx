@@ -112,6 +112,7 @@ export default function Posts() {
                     post.content.split(" ").length / 200
                   )} min`}
                   community={post.community}
+                  isSaved={post.isSaved || false}
                 />
               ))
             ) : (

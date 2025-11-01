@@ -18,7 +18,8 @@ export const postsResolver = {
         published?: boolean;
         communityId?: string | number;
         authorId?: string;
-      }
+      },
+      { user }: { user?: any }
     ) => {
       try {
         const where: any = {};
@@ -92,7 +93,11 @@ export const postsResolver = {
       }
     },
 
-    post: async (_: unknown, { id }: { id: string }) => {
+    post: async (
+      _: unknown,
+      { id }: { id: string },
+      { user }: { user?: any }
+    ) => {
       try {
         const post = await prisma.post.findUnique({
           where: { id },
@@ -128,12 +133,14 @@ export const postsResolver = {
 
         if (!post) return null;
 
+        const postWithRelations = post as any;
+
         return {
-          ...post,
-          tags: (post.tags as any[]).map((pt) => pt.tag),
-          likes: post.votes.filter((v: any) => v.value === 1),
-          dislikes: post.votes.filter((v: any) => v.value === -1),
-          comments: (post.comments as any[]).map((c: any) => ({
+          ...postWithRelations,
+          tags: (postWithRelations.tags as any[]).map((pt) => pt.tag),
+          likes: postWithRelations.votes.filter((v: any) => v.value === 1),
+          dislikes: postWithRelations.votes.filter((v: any) => v.value === -1),
+          comments: (postWithRelations.comments as any[]).map((c: any) => ({
             ...c,
             likes: c.votes.filter((v: any) => v.value === 1),
             dislikes: c.votes.filter((v: any) => v.value === -1),
@@ -178,6 +185,91 @@ export const postsResolver = {
       } catch (error) {
         console.error("Error fetching popular tags:", error);
         throw new Error("Failed to fetch popular tags");
+      }
+    },
+
+    savedPosts: async (
+      _: unknown,
+      { limit = 20, offset = 0 }: { limit?: number; offset?: number },
+      { user }: { user?: any }
+    ) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        const savedPostsData = await (prisma as any).savedPost.findMany({
+          where: { userId: user.id },
+          include: {
+            post: {
+              include: {
+                author: { select: { id: true, username: true, email: true } },
+                tags: { include: { tag: true } },
+                comments: {
+                  where: { parentCommentId: null },
+                  include: {
+                    author: { select: { id: true, username: true } },
+                    votes: {
+                      include: {
+                        user: { select: { id: true, username: true } },
+                      },
+                    },
+                    replies: {
+                      include: {
+                        author: { select: { id: true, username: true } },
+                        votes: {
+                          include: {
+                            user: { select: { id: true, username: true } },
+                          },
+                        },
+                      },
+                      orderBy: { createdAt: "asc" },
+                    },
+                  },
+                  orderBy: { createdAt: "desc" },
+                },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+        });
+
+        const posts = savedPostsData.map((sp: any) => {
+          const post = sp.post;
+          return {
+            ...post,
+            tags: (post.tags as any[]).map((pt) => pt.tag),
+            comments: (post.comments as any[]).map((c: any) => ({
+              ...c,
+              likes: c.votes.filter((v: any) => v.value === 1),
+              dislikes: c.votes.filter((v: any) => v.value === -1),
+              voteCount: c.votes.reduce(
+                (sum: number, v: any) => sum + v.value,
+                0
+              ),
+              replies: c.replies.map((reply: any) => ({
+                ...reply,
+                likes: reply.votes.filter((v: any) => v.value === 1),
+                dislikes: reply.votes.filter((v: any) => v.value === -1),
+                voteCount: reply.votes.reduce(
+                  (sum: number, v: any) => sum + v.value,
+                  0
+                ),
+              })),
+            })),
+            isSaved: true,
+          };
+        });
+
+        return posts;
+      } catch (error) {
+        console.error("Error fetching saved posts:", error);
+        throw new Error("Failed to fetch saved posts");
       }
     },
 
@@ -585,6 +677,72 @@ export const postsResolver = {
         throw new Error("Failed to vote comment");
       }
     },
+
+    savePost: async (
+      _: unknown,
+      { postId }: { postId: string },
+      { user }: { user: any }
+    ) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        const existing = await (prisma as any).savedPost.findUnique({
+          where: {
+            userId_postId: {
+              userId: user.id,
+              postId: postId,
+            },
+          },
+        });
+
+        if (existing) {
+          return true;
+        }
+
+        await (prisma as any).savedPost.create({
+          data: {
+            userId: user.id,
+            postId: postId,
+          },
+        });
+
+        return true;
+      } catch (error) {
+        console.error("Error saving post:", error);
+        throw new Error("Failed to save post");
+      }
+    },
+
+    unsavePost: async (
+      _: unknown,
+      { postId }: { postId: string },
+      { user }: { user: any }
+    ) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        await (prisma as any).savedPost.delete({
+          where: {
+            userId_postId: {
+              userId: user.id,
+              postId: postId,
+            },
+          },
+        });
+
+        return true;
+      } catch (error: any) {
+        if (error.code === "P2025") {
+          return true;
+        }
+        console.error("Error unsaving post:", error);
+        throw new Error("Failed to unsave post");
+      }
+    },
   },
 
   Post: {
@@ -597,6 +755,26 @@ export const postsResolver = {
       } catch (error) {
         console.error("Error counting comments:", error);
         return 0;
+      }
+    },
+
+    isSaved: async (post: any, _: unknown, { user }: { user?: any }) => {
+      if (!user) return false;
+
+      try {
+        const savedPost = await (prisma as any).savedPost.findUnique({
+          where: {
+            userId_postId: {
+              userId: user.id,
+              postId: post.id,
+            },
+          },
+        });
+
+        return !!savedPost;
+      } catch (error) {
+        console.error("Error checking if post is saved:", error);
+        return false;
       }
     },
   },

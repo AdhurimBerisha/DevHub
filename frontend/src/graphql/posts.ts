@@ -86,6 +86,73 @@ export const GET_POSTS_QUERY = gql`
           username
         }
       }
+      isSaved
+    }
+  }
+`;
+
+export const GET_POPULAR_TAGS = gql`
+  query GetPopularTags {
+    popularTags {
+      id
+      name
+      color
+      postCount
+      createdAt
+    }
+  }
+`;
+
+export const GET_TAGS_QUERY = gql`
+  query GetTags {
+    tags {
+      id
+      name
+      color
+      createdAt
+    }
+  }
+`;
+
+export const GET_SAVED_POSTS_QUERY = gql`
+  query GetSavedPosts($limit: Int, $offset: Int) {
+    savedPosts(limit: $limit, offset: $offset) {
+      id
+      communityId
+      title
+      content
+      published
+      featured
+      viewCount
+      createdAt
+      updatedAt
+      author {
+        id
+        username
+        email
+      }
+      community {
+        id
+        name
+        slug
+        description
+        memberCount
+      }
+      tags {
+        id
+        name
+        color
+      }
+      commentCount
+      votes {
+        id
+        value
+        user {
+          id
+          username
+        }
+      }
+      isSaved
     }
   }
 `;
@@ -164,6 +231,7 @@ export const GET_POST_QUERY = gql`
           username
         }
       }
+      isSaved
     }
   }
 `;
@@ -276,19 +344,22 @@ export const ADD_COMMENT_MUTATION = gql`
           id
           username
         }
-        replies {
+        post {
           id
-          content
-          createdAt
-          author {
-            id
-            username
-          }
         }
         votes {
           id
           value
           user {
+            id
+            username
+          }
+        }
+        replies {
+          id
+          content
+          createdAt
+          author {
             id
             username
           }
@@ -307,19 +378,9 @@ export const VOTE_POST_MUTATION = gql`
         id
         username
       }
-    }
-  }
-`;
-
-// ================== Tags ==================
-
-export const GET_TAGS_QUERY = gql`
-  query GetTags {
-    tags {
-      id
-      name
-      color
-      createdAt
+      post {
+        id
+      }
     }
   }
 `;
@@ -339,16 +400,6 @@ export const CREATE_TAG_MUTATION = gql`
   }
 `;
 
-export const GET_POPULAR_TAGS = gql`
-  query GetPopularTags {
-    popularTags {
-      id
-      name
-      postCount
-    }
-  }
-`;
-
 export const VOTE_COMMENT_MUTATION = gql`
   mutation VoteComment($commentId: ID!, $value: Int!) {
     voteComment(commentId: $commentId, value: $value) {
@@ -359,5 +410,17 @@ export const VOTE_COMMENT_MUTATION = gql`
         username
       }
     }
+  }
+`;
+
+export const SAVE_POST_MUTATION = gql`
+  mutation SavePost($postId: ID!) {
+    savePost(postId: $postId)
+  }
+`;
+
+export const UNSAVE_POST_MUTATION = gql`
+  mutation UnsavePost($postId: ID!) {
+    unsavePost(postId: $postId)
   }
 `;

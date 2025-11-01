@@ -38,7 +38,10 @@ interface UsersActions {
   setFriendRequests: (requests: FriendRequest[]) => void;
   addFriendRequest: (request: FriendRequest) => void;
   removeFriendRequest: (requestId: string) => void;
-  updateFriendRequest: (requestId: string, updates: Partial<FriendRequest>) => void;
+  updateFriendRequest: (
+    requestId: string,
+    updates: Partial<FriendRequest>
+  ) => void;
   resetUsers: () => void;
 }
 
@@ -77,7 +80,6 @@ export const useUsersStore = create<UsersStore>()(
 
       addFriendRequest: (request) =>
         set((state) => {
-          // Check if request already exists to avoid duplicates
           if (state.friendRequests.some((req) => req.id === request.id)) {
             return state;
           }
@@ -113,4 +115,3 @@ export const useUsersStore = create<UsersStore>()(
     }
   )
 );
-
