@@ -99,7 +99,7 @@ export function PostCard({
               <Badge 
                 variant="outline"
                 className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                onClick={() => navigate(`/community/${community.slug}`)}
+                onClick={() => navigate(`/communities/${community.id}`)}
               >
                 c/{community.name}
               </Badge>
@@ -137,7 +137,12 @@ export function PostCard({
           </div>
 
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 gap-2 text-xs"
+              onClick={() => navigate(`/post/${id}#comments`)}
+            >
               <MessageSquare className="h-4 w-4" />
               {commentsCount} Comments
             </Button>
