@@ -270,6 +270,43 @@ export default function Profile() {
   }
 
   const user = isOwnProfile ? userData?.currentUser : userData?.user;
+  
+  // Guard against undefined user (e.g., after sign out)
+  if (!user) {
+    if (isOwnProfile) {
+      // If it's own profile and no user, redirect or show message
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Card className="p-6 max-w-md">
+            <h2 className="text-xl font-bold mb-2">
+              Please sign in
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              You need to be signed in to view your profile.
+            </p>
+            <Button onClick={() => navigate("/auth")}>
+              Go to Sign In
+            </Button>
+          </Card>
+        </div>
+      );
+    } else {
+      // If viewing another user's profile and not found
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Card className="p-6 max-w-md">
+            <h2 className="text-xl font-bold mb-2">
+              User not found
+            </h2>
+            <p className="text-muted-foreground">
+              The user profile you're looking for doesn't exist.
+            </p>
+          </Card>
+        </div>
+      );
+    }
+  }
+
   const stats = calculateStats();
   const userPosts = postsData?.posts || [];
 
