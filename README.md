@@ -34,7 +34,7 @@ A full-stack developer community platform for sharing knowledge, discussing tech
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/AdhurimBerisha/Study-Buddy.git
+   git clone https://github.com/AdhurimBerisha/DevHub.git
    ```
 
 2. Install dependencies for frontend and backend
