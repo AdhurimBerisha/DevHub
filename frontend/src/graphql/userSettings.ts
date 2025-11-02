@@ -8,6 +8,7 @@ export const GET_CURRENT_USER = gql`
       username
       gender
       role
+      avatar
       createdAt
       updatedAt
     }
@@ -22,6 +23,7 @@ export const UPDATE_USER = gql`
       username
       gender
       role
+      avatar
       createdAt
       updatedAt
     }

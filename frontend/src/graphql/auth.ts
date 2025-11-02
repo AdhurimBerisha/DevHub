@@ -36,6 +36,24 @@ export const CREATE_USER_MUTATION = gql`
   }
 `;
 
+export const LOGIN_WITH_GOOGLE_MUTATION = gql`
+  mutation LoginWithGoogle($token: String!) {
+    loginWithGoogle(token: $token) {
+      success
+      message
+      user {
+        id
+        email
+        username
+        role
+        createdAt
+        updatedAt
+      }
+      token
+    }
+  }
+`;
+
 export const GET_USERS_QUERY = gql`
   query GetUsersAndFriendRequests {
     users {
@@ -72,6 +90,7 @@ export const GET_USER_QUERY = gql`
       email
       username
       role
+      avatar
       createdAt
       updatedAt
     }
@@ -86,6 +105,7 @@ export const GET_USER_POSTS = gql`
       content
       createdAt
       viewCount
+      commentCount
       tags {
         tag {
           id

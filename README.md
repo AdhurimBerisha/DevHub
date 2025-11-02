@@ -6,7 +6,7 @@ A full-stack developer community platform for sharing knowledge, discussing tech
 
 ## Features
 
-- User authentication and profiles — Secure registration/login with JWT authentication, customizable profiles with avatars
+- User authentication and profiles — Secure registration/login with JWT authentication and Google OAuth, customizable profiles with avatars
 - Posts and content — Create posts with images, tags, and rich text; publish or save as drafts
 - Voting system — Upvote/downvote posts and comments
 - Comments and discussions — Nested comment threads with replies
@@ -62,8 +62,21 @@ This project requires a few environment variables to run properly.
 - `CLOUDINARY_API_KEY` — your_api_key
 - `CLOUDINARY_SECRET_KEY` — your_api_secret
 - `JWT_SECRET` — your_jwt_secret
+- `GOOGLE_CLIENT_ID` — your_google_oauth_client_id
 
-4. Run the development servers
+### frontend `.env` variables include:
+
+- `VITE_GOOGLE_CLIENT_ID` — your_google_oauth_client_id (same as backend)
+- `VITE_GRAPHQL_URL` — http://localhost:4001/graphql
+
+4. Run the database migrations
+
+   ```bash
+   cd backend
+   npx prisma migrate deploy
+   ```
+
+5. Run the development servers
 
    ```bash
    # Backend
@@ -72,3 +85,26 @@ This project requires a few environment variables to run properly.
    # Frontend
    npm run dev
    ```
+
+## Google OAuth Setup
+
+To enable Google OAuth authentication:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API
+4. Create OAuth 2.0 credentials (Web application type)
+5. Add authorized JavaScript origins:
+   - `http://localhost:5173`
+   - `http://localhost:8080`
+6. Copy the Client ID and add it to both backend and frontend `.env` files as `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID`
+
+## Troubleshooting
+
+**Connection Refused Error**: Make sure the backend server is running before accessing the frontend. Start the backend first with `cd backend && npm run dev`
+
+**Google OAuth Not Working**:
+
+- Ensure `GOOGLE_CLIENT_ID` is set in both frontend and backend `.env` files
+- Verify the Client ID in Google Cloud Console includes your development URLs
+- Check browser console for CORS or configuration errors

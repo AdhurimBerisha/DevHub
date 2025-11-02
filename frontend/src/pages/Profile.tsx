@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
+import { useQuery, useMutation, useApolloClient } from "@apollo/client";
 import {
   Dialog,
   DialogContent,
@@ -18,67 +18,10 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
 import { useAuthStore } from "@/stores/authStore";
+import { GET_CURRENT_USER, UPDATE_USER } from "@/graphql/userSettings";
+import { GET_USER_QUERY, GET_USER_POSTS } from "@/graphql/auth";
 
 const POSTS_PER_PAGE = 5;
-
-const GET_CURRENT_USER = gql`
-  query GetCurrentUser {
-    currentUser {
-      id
-      email
-      username
-      role
-      avatar
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-const GET_USER_QUERY = gql`
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      email
-      username
-      role
-      avatar
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-const GET_USER_POSTS = gql`
-  query GetUserPosts($authorId: ID!) {
-    posts(authorId: $authorId) {
-      id
-      title
-      content
-      createdAt
-      viewCount
-      commentCount
-      votes {
-        value
-      }
-      comments {
-        id
-      }
-    }
-  }
-`;
-
-const UPDATE_USER = gql`
-  mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
-    updateUser(id: $id, input: $input) {
-      id
-      email
-      username
-      role
-      updatedAt
-    }
-  }
-`;
 
 export default function Profile() {
   const { toast } = useToast();
@@ -101,7 +44,7 @@ export default function Profile() {
     data: userData,
   } = useQuery(isOwnProfile ? GET_CURRENT_USER : GET_USER_QUERY, {
     variables: isOwnProfile ? {} : { id },
-    skip: isOwnProfile && !token, // Skip currentUser query if not authenticated
+    skip: isOwnProfile && !token,
     fetchPolicy: "network-only",
   });
 
@@ -117,7 +60,6 @@ export default function Profile() {
     refetchQueries: [{ query: GET_CURRENT_USER }],
   });
 
-  // Populate form data when dialog opens or user data changes
   useEffect(() => {
     if (open && userData) {
       const currentUser = isOwnProfile ? userData?.currentUser : userData?.user;
@@ -126,7 +68,7 @@ export default function Profile() {
           username: currentUser.username || "",
           email: currentUser.email || "",
         });
-        setAvatarPreview(null); // Clear preview when dialog opens
+        setAvatarPreview(null);
       }
     }
   }, [open, userData, isOwnProfile]);
@@ -135,7 +77,6 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file type",
@@ -145,7 +86,6 @@ export default function Profile() {
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -155,7 +95,6 @@ export default function Profile() {
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatarPreview(reader.result as string);
@@ -206,7 +145,6 @@ export default function Profile() {
 
       const data = await response.json();
 
-      // Update the user's avatar in the database via GraphQL
       await updateUser({
         variables: {
           id: userData?.currentUser?.id || userData?.user?.id,
@@ -219,10 +157,8 @@ export default function Profile() {
         description: "Your avatar has been successfully updated.",
       });
 
-      // Refetch user data
       await client.refetchQueries({ include: "active" });
 
-      // Clear preview
       setAvatarPreview(null);
       if (fileInput) fileInput.value = "";
     } catch (error: unknown) {

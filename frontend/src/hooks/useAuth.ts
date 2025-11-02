@@ -1,7 +1,12 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
 import { apolloClient } from "@/lib/apollo";
-import { LOGIN_MUTATION, CREATE_USER_MUTATION } from "@/graphql/auth";
+import {
+  LOGIN_MUTATION,
+  CREATE_USER_MUTATION,
+  LOGIN_WITH_GOOGLE_MUTATION,
+} from "@/graphql/auth";
+import { useGoogleLogin } from "@react-oauth/google";
 
 interface LoginResponse {
   login: {
@@ -146,6 +151,56 @@ export const useAuth = () => {
     });
   };
 
+  const signInWithGoogle = useGoogleLogin({
+    onSuccess: async (credentialResponse) => {
+      try {
+        setLoading(true);
+
+        const { data } = await apolloClient.mutate({
+          mutation: LOGIN_WITH_GOOGLE_MUTATION,
+          variables: {
+            token: credentialResponse.access_token,
+          },
+        });
+
+        if (
+          data?.loginWithGoogle?.success &&
+          data?.loginWithGoogle?.user &&
+          data?.loginWithGoogle?.token
+        ) {
+          storeLogin(data.loginWithGoogle.user, data.loginWithGoogle.token);
+          toast({
+            title: "Welcome!",
+            description: "Successfully signed in with Google.",
+          });
+        } else {
+          toast({
+            title: "Sign in failed",
+            description:
+              data?.loginWithGoogle?.message || "Failed to sign in with Google",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Google sign in error:", error);
+        toast({
+          title: "Error",
+          description: "An error occurred during Google sign in.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to sign in with Google",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     user,
     token,
@@ -155,5 +210,6 @@ export const useAuth = () => {
     signIn,
     signUp,
     signOut,
+    signInWithGoogle,
   };
 };

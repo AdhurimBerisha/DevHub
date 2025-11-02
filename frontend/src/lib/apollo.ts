@@ -10,7 +10,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 const GRAPHQL_URL =
   (import.meta.env.VITE_GRAPHQL_URL as string) ||
-  "http://localhost:4000/graphql";
+  "http://localhost:4001/graphql";
 
 const httpLink = createHttpLink({
   uri: GRAPHQL_URL,

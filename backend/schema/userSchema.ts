@@ -46,6 +46,7 @@ export const userTypeDefs = gql`
     updateUser(id: ID!, input: UpdateUserInput!): User!
     deleteUser(id: ID!): Boolean!
     login(input: LoginInput!): LoginResponse!
+    loginWithGoogle(token: String!): LoginResponse!
 
     # 👇 Friendship-related mutations
     sendFriendRequest(receiverId: ID!): Friendship!

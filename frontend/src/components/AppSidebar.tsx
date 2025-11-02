@@ -76,22 +76,20 @@ export function AppSidebar() {
   const { isDark, toggle } = useTheme();
   const client = useApolloClient();
 
-  // Fetch current user with avatar for sidebar display
   const { data: currentUserData } = useQuery(GET_CURRENT_USER, {
     skip: !token || !isAuthenticated,
     errorPolicy: "ignore",
     fetchPolicy: "cache-and-network",
   });
 
-  const {
-    data: conversationsData,
-    refetch: refetchConversations,
-  } = useQuery(GET_CONVERSATIONS_QUERY, {
-    skip: !token || !isAuthenticated,
-    errorPolicy: "ignore", // Ignore errors when skipped
-  });
+  const { data: conversationsData, refetch: refetchConversations } = useQuery(
+    GET_CONVERSATIONS_QUERY,
+    {
+      skip: !token || !isAuthenticated,
+      errorPolicy: "ignore",
+    }
+  );
 
-  // Use currentUser avatar if available, otherwise fallback to store user
   const displayUser = currentUserData?.currentUser || user;
 
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
@@ -119,9 +117,7 @@ export function AppSidebar() {
     }) => {
       if (message.senderId !== user?.id && refetchConversations) {
         setTotalUnreadCount((prev) => prev + 1);
-        refetchConversations().catch(() => {
-          // Silently ignore refetch errors
-        });
+        refetchConversations().catch(() => {});
       }
     };
 
@@ -136,13 +132,10 @@ export function AppSidebar() {
     if (!token || !isAuthenticated) return;
 
     const interval = setInterval(() => {
-      // Only refetch if still authenticated to prevent errors
       const currentToken = useAuthStore.getState().token;
       const currentAuth = useAuthStore.getState().isAuthenticated;
       if (currentToken && currentAuth && refetchConversations) {
-        refetchConversations().catch(() => {
-          // Silently ignore refetch errors (e.g., when user logs out)
-        });
+        refetchConversations().catch(() => {});
       }
     }, 3000);
 
@@ -255,7 +248,10 @@ export function AppSidebar() {
                 }`}
               >
                 <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage src={displayUser?.avatar} alt={displayUser?.username} />
+                  <AvatarImage
+                    src={displayUser?.avatar}
+                    alt={displayUser?.username}
+                  />
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                     {displayUser?.username?.charAt(0).toUpperCase() || (
                       <User className="h-4 w-4" />

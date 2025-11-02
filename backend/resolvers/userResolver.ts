@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { generateToken, hashPassword, comparePassword } from "../utils/auth";
+import { verifyGoogleToken } from "../utils/googleAuth";
 import {
   validateEmail,
   validatePassword,
@@ -351,6 +352,115 @@ export const userResolver = {
         return {
           success: false,
           message: "An error occurred during login",
+          user: null,
+          token: null,
+        };
+      }
+    },
+
+    loginWithGoogle: async (_: unknown, { token }: { token: string }) => {
+      try {
+        const googleUser = await verifyGoogleToken(token);
+
+        if (!googleUser) {
+          return {
+            success: false,
+            message: "Invalid Google token",
+            user: null,
+            token: null,
+          };
+        }
+
+        if (!googleUser.email_verified) {
+          return {
+            success: false,
+            message: "Google email not verified",
+            user: null,
+            token: null,
+          };
+        }
+
+        const email = normalizeEmail(googleUser.email);
+
+        let user = await prisma.user.findFirst({
+          where: {
+            OR: [{ email }, { googleId: googleUser.sub }],
+          },
+        });
+
+        if (user) {
+          if (!user.googleId) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                googleId: googleUser.sub,
+                authProvider: "google",
+
+                avatar: user.avatar || googleUser.picture,
+              },
+            });
+          } else {
+            if (!user.avatar && googleUser.picture) {
+              user = await prisma.user.update({
+                where: { id: user.id },
+                data: { avatar: googleUser.picture },
+              });
+            }
+          }
+        } else {
+          const baseUsername =
+            googleUser.given_name?.toLowerCase().replace(/\s/g, "") ||
+            email.split("@")[0] ||
+            `user${Date.now()}`;
+
+          let username = baseUsername;
+          let counter = 1;
+          while (await prisma.user.findUnique({ where: { username } })) {
+            username = `${baseUsername}${counter}`;
+            counter++;
+          }
+
+          user = await prisma.user.create({
+            data: {
+              email,
+              username,
+              googleId: googleUser.sub,
+              authProvider: "google",
+              avatar: googleUser.picture,
+              password: "",
+            },
+          });
+        }
+
+        if (!user) {
+          return {
+            success: false,
+            message: "Failed to create or retrieve user",
+            user: null,
+            token: null,
+          };
+        }
+
+        const jwtToken = generateToken(user.id, user.email, user.role);
+
+        return {
+          success: true,
+          message: "Login successful",
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
+          token: jwtToken,
+        };
+      } catch (error: any) {
+        console.error("Error during Google login:", error);
+        return {
+          success: false,
+          message: error.message || "An error occurred during Google login",
           user: null,
           token: null,
         };

@@ -10,12 +10,11 @@ import {
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Configure multer for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -36,20 +35,16 @@ router.post("/avatar", upload.single("avatar"), async (req: any, res: any) => {
       return res.status(400).json({ error: "No file provided" });
     }
 
-    // Convert buffer to base64
     const base64Image = req.file.buffer.toString("base64");
     const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
 
-    // Get existing user to check for old avatar
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { avatar: true } as any,
     });
 
-    // Upload to Cloudinary
     const cloudinaryUrl = await uploadToCloudinary(dataURI, "avatars");
 
-    // If user has existing avatar, delete it from Cloudinary
     if (user && (user as any).avatar) {
       const publicId = extractPublicId((user as any).avatar);
       if (publicId) {
@@ -57,7 +52,6 @@ router.post("/avatar", upload.single("avatar"), async (req: any, res: any) => {
       }
     }
 
-    // Update user with new avatar URL
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: { avatar: cloudinaryUrl } as any,
@@ -83,59 +77,62 @@ router.post("/avatar", upload.single("avatar"), async (req: any, res: any) => {
   }
 });
 
-router.post("/post-image", upload.single("image"), async (req: any, res: any) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ error: "No file provided" });
-    }
-
-    const { postId } = req.body;
-
-    // If postId is provided, verify ownership
-    if (postId) {
-      const post = await prisma.post.findUnique({
-        where: { id: postId },
-        select: { authorId: true, image: true } as any,
-      });
-
-      if (!post) {
-        return res.status(404).json({ error: "Post not found" });
+router.post(
+  "/post-image",
+  upload.single("image"),
+  async (req: any, res: any) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if ((post as any).authorId !== req.user.id && req.user.role !== "ADMIN") {
-        return res.status(403).json({ error: "Not authorized" });
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
       }
 
-      // Delete old image if exists
-      if ((post as any).image) {
-        const publicId = extractPublicId((post as any).image);
-        if (publicId) {
-          await deleteFromCloudinary(publicId);
+      const { postId } = req.body;
+
+      if (postId) {
+        const post = await prisma.post.findUnique({
+          where: { id: postId },
+          select: { authorId: true, image: true } as any,
+        });
+
+        if (!post) {
+          return res.status(404).json({ error: "Post not found" });
+        }
+
+        if (
+          (post as any).authorId !== req.user.id &&
+          req.user.role !== "ADMIN"
+        ) {
+          return res.status(403).json({ error: "Not authorized" });
+        }
+
+        if ((post as any).image) {
+          const publicId = extractPublicId((post as any).image);
+          if (publicId) {
+            await deleteFromCloudinary(publicId);
+          }
         }
       }
+
+      const base64Image = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
+
+      const cloudinaryUrl = await uploadToCloudinary(dataURI, "posts");
+
+      res.json({
+        success: true,
+        imageUrl: cloudinaryUrl,
+      });
+    } catch (error: any) {
+      console.error("Post image upload error:", error);
+      res.status(500).json({
+        error: error.message || "Failed to upload post image",
+      });
     }
-
-    // Convert buffer to base64
-    const base64Image = req.file.buffer.toString("base64");
-    const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
-
-    // Upload to Cloudinary
-    const cloudinaryUrl = await uploadToCloudinary(dataURI, "posts");
-
-    res.json({
-      success: true,
-      imageUrl: cloudinaryUrl,
-    });
-  } catch (error: any) {
-    console.error("Post image upload error:", error);
-    res.status(500).json({
-      error: error.message || "Failed to upload post image",
-    });
   }
-});
+);
 
 export default router;

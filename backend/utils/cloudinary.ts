@@ -48,14 +48,15 @@ export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
     console.error("Cloudinary delete error:", error);
-    // Don't throw - deletion failures shouldn't break the flow
   }
 };
 
 export const extractPublicId = (url: string): string | null => {
   try {
     const parts = url.split("/");
-    const folderIndex = parts.findIndex((p) => p === "avatars" || p === "posts");
+    const folderIndex = parts.findIndex(
+      (p) => p === "avatars" || p === "posts"
+    );
     if (folderIndex !== -1 && folderIndex < parts.length - 1) {
       const folder = parts[folderIndex];
       const filename = parts[parts.length - 1].split(".")[0];
