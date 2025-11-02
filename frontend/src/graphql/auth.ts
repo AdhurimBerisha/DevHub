@@ -107,13 +107,17 @@ export const GET_USER_POSTS = gql`
       viewCount
       commentCount
       tags {
-        tag {
-          id
-          name
-        }
+        id
+        name
+        color
       }
       votes {
+        id
         value
+        user {
+          id
+          username
+        }
       }
       comments {
         id

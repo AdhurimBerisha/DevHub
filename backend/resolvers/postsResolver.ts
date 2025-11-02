@@ -68,6 +68,7 @@ export const postsResolver = {
           tags: (p.tags as any[]).map((pt: any) => pt.tag),
           likes: p.votes.filter((v: any) => v.value === 1),
           dislikes: p.votes.filter((v: any) => v.value === -1),
+          voteCount: p.votes.reduce((sum: number, v: any) => sum + v.value, 0),
           comments: p.comments.map((c: any) => ({
             ...c,
             likes: c.votes.filter((v: any) => v.value === 1),
@@ -244,6 +245,7 @@ export const postsResolver = {
           return {
             ...post,
             tags: (post.tags as any[]).map((pt) => pt.tag),
+            voteCount: post.votes.reduce((sum: number, v: any) => sum + v.value, 0),
             comments: (post.comments as any[]).map((c: any) => ({
               ...c,
               likes: c.votes.filter((v: any) => v.value === 1),

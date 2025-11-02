@@ -50,7 +50,7 @@ export default function Profile() {
 
   const userId = isOwnProfile ? userData?.currentUser?.id : userData?.user?.id;
 
-  const { loading: postsLoading, data: postsData } = useQuery(GET_USER_POSTS, {
+  const { loading: postsLoading, data: postsData, error: postsError } = useQuery(GET_USER_POSTS, {
     variables: { authorId: userId },
     skip: !userId,
     fetchPolicy: "network-only",

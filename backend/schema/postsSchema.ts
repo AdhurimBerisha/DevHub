@@ -110,6 +110,7 @@ export const postsTypeDefs = gql`
       offset: Int
       published: Boolean
       communityId: ID
+      authorId: ID
     ): [Post!]!
     post(id: ID!): Post
     tags: [Tag!]!
