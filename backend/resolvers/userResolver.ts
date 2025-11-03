@@ -97,6 +97,7 @@ export const userResolver = {
             gender: true,
             avatar: true,
             emailVerified: true,
+            pendingEmail: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -286,7 +287,65 @@ export const userResolver = {
           const emailValidation = validateEmail(input.email);
           if (!emailValidation.isValid)
             throw new Error(emailValidation.message);
-          updateData.email = normalizeEmail(input.email);
+          
+          const normalizedNewEmail = normalizeEmail(input.email);
+          
+          // Get current user to check if email is actually changing
+          const currentUser = await prisma.user.findUnique({
+            where: { id },
+            select: { email: true, username: true },
+          });
+          
+          if (!currentUser) throw new Error("User not found");
+          
+          // If email is actually changing, set up email change verification
+          if (normalizedNewEmail !== currentUser.email) {
+            // Check if new email is already taken
+            const emailExists = await prisma.user.findUnique({
+              where: { email: normalizedNewEmail },
+              select: { id: true },
+            });
+            
+            if (emailExists) {
+              throw new Error("Email is already in use");
+            }
+            
+            // Generate email change token
+            const emailChangeToken = crypto.randomBytes(32).toString("hex");
+            const tokenExpires = new Date();
+            tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours expiry
+            
+            // Store pending email and token
+            updateData.pendingEmail = normalizedNewEmail;
+            updateData.emailChangeToken = emailChangeToken;
+            updateData.emailChangeTokenExpires = tokenExpires;
+            
+            // Send verification email to new email address
+            try {
+              await emailService.sendEmailChangeVerificationEmail(
+                normalizedNewEmail,
+                emailChangeToken,
+                currentUser.username,
+                currentUser.email
+              );
+            } catch (emailError) {
+              console.error("Failed to send email change verification email:", emailError);
+              // Don't throw - allow pending email to be set, user can resend
+            }
+            
+            // Send notification email to old email address
+            try {
+              await emailService.sendEmailChangeNotificationEmail(
+                currentUser.email,
+                currentUser.username,
+                normalizedNewEmail
+              );
+            } catch (emailError) {
+              console.error("Failed to send email change notification:", emailError);
+              // Non-critical, continue
+            }
+          }
+          // If email is the same, don't do anything (no change needed)
         }
 
         if (input.username) {
@@ -311,6 +370,7 @@ export const userResolver = {
             gender: true,
             avatar: true,
             emailVerified: true,
+            pendingEmail: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -884,6 +944,143 @@ export const userResolver = {
         return {
           success: false,
           message: error.message || "Failed to reset password",
+          user: null,
+          token: null,
+        };
+      }
+    },
+
+    verifyEmailChange: async (
+      _: unknown,
+      { token }: { token: string },
+      context: { user?: any }
+    ) => {
+      try {
+        // Find user by email change token
+        const user = await prisma.user.findFirst({
+          where: {
+            emailChangeToken: token,
+            emailChangeTokenExpires: {
+              gt: new Date(), // Token not expired
+            },
+          },
+        });
+
+        if (!user || !user.pendingEmail) {
+          return {
+            success: false,
+            message: "Invalid or expired email change token",
+            user: null,
+            token: null,
+          };
+        }
+
+        // Check if pending email is already taken
+        const emailExists = await prisma.user.findUnique({
+          where: { email: user.pendingEmail },
+          select: { id: true },
+        });
+
+        if (emailExists) {
+          return {
+            success: false,
+            message: "Email is already in use",
+            user: null,
+            token: null,
+          };
+        }
+
+        // Update email and clear pending email fields
+        const updatedUser = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            email: user.pendingEmail,
+            pendingEmail: null,
+            emailChangeToken: null,
+            emailChangeTokenExpires: null,
+            emailVerified: true, // New email is verified
+          },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            emailVerified: true,
+            pendingEmail: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        // Generate token for the user
+        const jwtToken = generateToken(
+          updatedUser.id,
+          updatedUser.email,
+          updatedUser.role
+        );
+
+        return {
+          success: true,
+          message: "Email changed successfully",
+          user: updatedUser,
+          token: jwtToken,
+        };
+      } catch (error: any) {
+        console.error("Error verifying email change:", error);
+        return {
+          success: false,
+          message: error.message || "Failed to verify email change",
+          user: null,
+          token: null,
+        };
+      }
+    },
+
+    cancelEmailChange: async (
+      _: unknown,
+      __: unknown,
+      context: { user: any }
+    ) => {
+      if (!context.user) {
+        return {
+          success: false,
+          message: "Authentication required",
+          user: null,
+          token: null,
+        };
+      }
+
+      try {
+        const updatedUser = await prisma.user.update({
+          where: { id: context.user.id },
+          data: {
+            pendingEmail: null,
+            emailChangeToken: null,
+            emailChangeTokenExpires: null,
+          },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            emailVerified: true,
+            pendingEmail: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        return {
+          success: true,
+          message: "Email change cancelled successfully",
+          user: updatedUser,
+          token: null,
+        };
+      } catch (error: any) {
+        console.error("Error cancelling email change:", error);
+        return {
+          success: false,
+          message: error.message || "Failed to cancel email change",
           user: null,
           token: null,
         };

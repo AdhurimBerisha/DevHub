@@ -45,6 +45,11 @@ model User {
   passwordResetToken String?
   passwordResetTokenExpires DateTime?
   
+  // Email change
+  pendingEmail String?
+  emailChangeToken String?
+  emailChangeTokenExpires DateTime?
+  
   // OAuth fields
   googleId  String?  @unique
   authProvider String? // "email", "google", etc.

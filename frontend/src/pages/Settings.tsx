@@ -4,6 +4,7 @@ import {
   UPDATE_USER,
   DELETE_USER,
 } from "@/graphql/userSettings";
+import { CANCEL_EMAIL_CHANGE_MUTATION } from "@/graphql/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +39,7 @@ export default function Settings() {
   const { data, loading, error } = useQuery(GET_CURRENT_USER);
   const [updateUser] = useMutation(UPDATE_USER);
   const [deleteUser] = useMutation(DELETE_USER);
+  const [cancelEmailChange] = useMutation(CANCEL_EMAIL_CHANGE_MUTATION);
 
   const [accountData, setAccountData] = useState({
     email: "",
@@ -78,10 +80,17 @@ export default function Settings() {
         },
       });
 
+      const message = data?.currentUser?.pendingEmail
+        ? "Verification email sent to your new email address. Please check your inbox."
+        : "Your account details have been updated.";
+
       toast({
         title: "Success",
-        description: "Your account details have been updated.",
+        description: message,
       });
+
+      // Refetch to get updated pendingEmail
+      await client.refetchQueries({ include: [GET_CURRENT_USER] });
     } catch (err) {
       toast({
         title: "Error",
@@ -203,6 +212,48 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {data?.currentUser?.pendingEmail && (
+              <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Email Change Pending
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                      A verification email has been sent to <strong>{data.currentUser.pendingEmail}</strong>.
+                      Please check your inbox to complete the email change.
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      Your current email: <strong>{data.currentUser.email}</strong>
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={async () => {
+                    try {
+                      await cancelEmailChange();
+                      toast({
+                        title: "Email change cancelled",
+                        description: "Your email change request has been cancelled.",
+                      });
+                      await client.refetchQueries({ include: [GET_CURRENT_USER] });
+                    } catch (err: unknown) {
+                      toast({
+                        title: "Error",
+                        description: err instanceof Error ? err.message : "Failed to cancel email change",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  Cancel Email Change
+                </Button>
+              </div>
+            )}
             <form onSubmit={handleAccountSubmit} className="space-y-4">
               <div>
                 <Label>Email</Label>
@@ -211,7 +262,13 @@ export default function Settings() {
                   onChange={(e) =>
                     setAccountData({ ...accountData, email: e.target.value })
                   }
+                  disabled={!!data?.currentUser?.pendingEmail}
                 />
+                {data?.currentUser?.pendingEmail && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Email change is pending. Cancel the current request to change it again.
+                  </p>
+                )}
               </div>
               <div>
                 <Label>Username</Label>

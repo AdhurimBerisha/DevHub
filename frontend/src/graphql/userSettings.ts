@@ -9,6 +9,8 @@ export const GET_CURRENT_USER = gql`
       gender
       role
       avatar
+      emailVerified
+      pendingEmail
       createdAt
       updatedAt
     }
@@ -24,6 +26,8 @@ export const UPDATE_USER = gql`
       gender
       role
       avatar
+      emailVerified
+      pendingEmail
       createdAt
       updatedAt
     }

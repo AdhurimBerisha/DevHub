@@ -30,6 +30,7 @@ import CommunityGuide from "./pages/CommunityGuide";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmailChange from "./pages/VerifyEmailChange";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => (
                     />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />
+                    <Route path="/verify-email-change" element={<VerifyEmailChange />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

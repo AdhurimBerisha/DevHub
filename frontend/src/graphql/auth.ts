@@ -147,3 +147,38 @@ export const RESET_PASSWORD_MUTATION = gql`
     }
   }
 `;
+
+export const VERIFY_EMAIL_CHANGE_MUTATION = gql`
+  mutation VerifyEmailChange($token: String!) {
+    verifyEmailChange(token: $token) {
+      success
+      message
+      user {
+        id
+        email
+        username
+        role
+        emailVerified
+        pendingEmail
+      }
+      token
+    }
+  }
+`;
+
+export const CANCEL_EMAIL_CHANGE_MUTATION = gql`
+  mutation CancelEmailChange {
+    cancelEmailChange {
+      success
+      message
+      user {
+        id
+        email
+        username
+        role
+        emailVerified
+        pendingEmail
+      }
+    }
+  }
+`;
