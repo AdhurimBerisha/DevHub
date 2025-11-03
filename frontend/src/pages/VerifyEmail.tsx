@@ -4,7 +4,10 @@ import { useMutation } from "@apollo/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
-import { VERIFY_EMAIL_MUTATION, RESEND_VERIFICATION_EMAIL_MUTATION } from "@/graphql/auth";
+import {
+  VERIFY_EMAIL_MUTATION,
+  RESEND_VERIFICATION_EMAIL_MUTATION,
+} from "@/graphql/auth";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,7 +17,9 @@ export default function VerifyEmail() {
   const token = searchParams.get("token");
   const { setToken, setUser } = useAuthStore();
   const { toast } = useToast();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading"
+  );
   const [message, setMessage] = useState("");
   const [canResend, setCanResend] = useState(false);
 
@@ -34,13 +39,12 @@ export default function VerifyEmail() {
         if (data?.verifyEmail?.success) {
           setStatus("success");
           setMessage(data.verifyEmail.message);
-          
-          // Store user and token if provided
+
           if (data.verifyEmail.user && data.verifyEmail.token) {
             setUser(data.verifyEmail.user);
             setToken(data.verifyEmail.token);
           }
-          
+
           setTimeout(() => navigate("/"), 3000);
         } else {
           setStatus("error");
@@ -48,9 +52,11 @@ export default function VerifyEmail() {
           setCanResend(true);
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         setStatus("error");
-        setMessage(error.message || "Verification failed");
+        setMessage(
+          error instanceof Error ? error.message : "Verification failed"
+        );
         setCanResend(true);
       });
   }, [token, verifyEmail, navigate, setToken, setUser]);
@@ -67,14 +73,16 @@ export default function VerifyEmail() {
       } else {
         toast({
           title: "Error",
-          description: data?.resendVerificationEmail?.message || "Failed to resend email",
+          description:
+            data?.resendVerificationEmail?.message || "Failed to resend email",
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to resend email",
+        description:
+          error instanceof Error ? error.message : "Failed to resend email",
         variant: "destructive",
       });
     }
@@ -84,7 +92,9 @@ export default function VerifyEmail() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">Email Verification</CardTitle>
+          <CardTitle className="text-center text-2xl">
+            Email Verification
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           {status === "loading" && (
@@ -108,11 +118,19 @@ export default function VerifyEmail() {
               <p className="text-red-600 font-medium">{message}</p>
               {canResend && (
                 <div className="space-y-2 pt-4">
-                  <Button onClick={handleResend} variant="outline" className="w-full">
+                  <Button
+                    onClick={handleResend}
+                    variant="outline"
+                    className="w-full"
+                  >
                     <Mail className="h-4 w-4 mr-2" />
                     Resend Verification Email
                   </Button>
-                  <Button onClick={() => navigate("/auth")} variant="ghost" className="w-full">
+                  <Button
+                    onClick={() => navigate("/auth")}
+                    variant="ghost"
+                    className="w-full"
+                  >
                     Go to Login
                   </Button>
                 </div>
@@ -124,4 +142,3 @@ export default function VerifyEmail() {
     </div>
   );
 }
-

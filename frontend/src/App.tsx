@@ -28,6 +28,8 @@ import Users from "./pages/Users";
 import SavedPosts from "./pages/SavedPosts";
 import CommunityGuide from "./pages/CommunityGuide";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +107,8 @@ const App = () => (
                     />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/verify-email" element={<VerifyEmail />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                     <Route path="/settings" element={<Settings />} />

@@ -51,6 +51,10 @@ export const userTypeDefs = gql`
     # Email verification
     verifyEmail(token: String!): AuthResponse!
     resendVerificationEmail: AuthResponse!
+    
+    # Password reset
+    forgotPassword(email: String!): AuthResponse!
+    resetPassword(token: String!, password: String!): AuthResponse!
 
     # 👇 Friendship-related mutations
     sendFriendRequest(receiverId: ID!): Friendship!

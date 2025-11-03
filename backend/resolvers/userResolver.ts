@@ -730,5 +730,164 @@ export const userResolver = {
         };
       }
     },
+
+    forgotPassword: async (
+      _: unknown,
+      { email }: { email: string },
+      context: { user?: any }
+    ) => {
+      try {
+        const normalizedEmail = normalizeEmail(email);
+
+        if (!validateEmail(normalizedEmail)) {
+          return {
+            success: false,
+            message: "Invalid email address",
+            user: null,
+            token: null,
+          };
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            authProvider: true,
+          },
+        });
+
+        // Don't reveal if user exists or not for security
+        if (!user || user.authProvider !== "email") {
+          return {
+            success: true,
+            message: "If an account with that email exists, a password reset link has been sent.",
+            user: null,
+            token: null,
+          };
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpires = new Date();
+        tokenExpires.setHours(tokenExpires.getHours() + 1); // 1 hour expiry
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            passwordResetToken: resetToken,
+            passwordResetTokenExpires: tokenExpires,
+          },
+        });
+
+        // Send password reset email
+        try {
+          await emailService.sendPasswordResetEmail(
+            user.email,
+            resetToken,
+            user.username
+          );
+        } catch (emailError) {
+          console.error("Failed to send password reset email:", emailError);
+          // Still return success to not reveal user existence
+        }
+
+        return {
+          success: true,
+          message: "If an account with that email exists, a password reset link has been sent.",
+          user: null,
+          token: null,
+        };
+      } catch (error: any) {
+        console.error("Error in forgotPassword:", error);
+        return {
+          success: false,
+          message: "Failed to process password reset request",
+          user: null,
+          token: null,
+        };
+      }
+    },
+
+    resetPassword: async (
+      _: unknown,
+      { token, password }: { token: string; password: string },
+      context: { user?: any }
+    ) => {
+      try {
+        if (!validatePassword(password)) {
+          return {
+            success: false,
+            message: "Password must be at least 8 characters long",
+            user: null,
+            token: null,
+          };
+        }
+
+        // Find user by reset token
+        const user = await prisma.user.findFirst({
+          where: {
+            passwordResetToken: token,
+            passwordResetTokenExpires: {
+              gt: new Date(), // Token not expired
+            },
+          },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            message: "Invalid or expired password reset token",
+            user: null,
+            token: null,
+          };
+        }
+
+        // Hash new password
+        const hashedPassword = await hashPassword(password);
+
+        // Update password and clear reset token
+        const updatedUser = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            password: hashedPassword,
+            passwordResetToken: null,
+            passwordResetTokenExpires: null,
+          },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            emailVerified: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        // Generate token for the user
+        const jwtToken = generateToken(
+          updatedUser.id,
+          updatedUser.email,
+          updatedUser.role
+        );
+
+        return {
+          success: true,
+          message: "Password reset successfully",
+          user: updatedUser,
+          token: jwtToken,
+        };
+      } catch (error: any) {
+        console.error("Error resetting password:", error);
+        return {
+          success: false,
+          message: error.message || "Failed to reset password",
+          user: null,
+          token: null,
+        };
+      }
+    },
   },
 };
