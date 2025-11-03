@@ -136,9 +136,9 @@ export function NotificationsDropdown() {
 
     // Navigate to the relevant post
     if (notification.post) {
-      navigate(`/posts/${notification.post.id}`);
+      navigate(`/post/${notification.post.id}`);
     } else if (notification.comment?.post?.id) {
-      navigate(`/posts/${notification.comment.post.id}`);
+      navigate(`/post/${notification.comment.post.id}`);
     }
 
     setIsOpen(false);
