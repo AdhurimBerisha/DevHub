@@ -11,8 +11,12 @@ import { adminResolver } from "../resolvers/adminResolver.js";
 import { friendResolver } from "../resolvers/friendsResolver.js";
 import { chatTypeDefs } from "../schema/chatSchema.js";
 import { chatResolver } from "../resolvers/chatResolver.js";
+import { notificationsTypeDefs } from "../schema/notificationsSchema.js";
+import { notificationsResolver } from "../resolvers/notificationsResolver.js";
 
-export function createApolloServer(prisma: PrismaClient) {
+import { Server as SocketIOServer } from "socket.io";
+
+export function createApolloServer(prisma: PrismaClient, io?: SocketIOServer) {
   return new ApolloServer({
     typeDefs: [
       userTypeDefs,
@@ -20,6 +24,7 @@ export function createApolloServer(prisma: PrismaClient) {
       communitiesTypeDefs,
       adminTypeDefs,
       chatTypeDefs,
+      notificationsTypeDefs,
     ],
     resolvers: {
       Query: {
@@ -29,6 +34,7 @@ export function createApolloServer(prisma: PrismaClient) {
         ...adminResolver.Query,
         ...friendResolver.Query,
         ...chatResolver.Query,
+        ...notificationsResolver.Query,
       },
       Mutation: {
         ...userResolver.Mutation,
@@ -37,6 +43,7 @@ export function createApolloServer(prisma: PrismaClient) {
         ...adminResolver.Mutation,
         ...friendResolver.Mutation,
         ...chatResolver.Mutation,
+        ...notificationsResolver.Mutation,
       },
       Conversation: {
         ...chatResolver.Conversation,

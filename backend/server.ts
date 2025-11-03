@@ -72,7 +72,7 @@ const io = new SocketIOServer(httpServer, {
   cors: socketCorsOptions,
 });
 
-const server = createApolloServer(prisma);
+const server = createApolloServer(prisma, io);
 
 io.use(createSocketAuthMiddleware(prisma));
 
@@ -94,6 +94,7 @@ const startServer = async () => {
       context: async ({ req }: { req: any }) => ({
         prisma,
         user: req.user || null,
+        io,
       }),
     })
   );

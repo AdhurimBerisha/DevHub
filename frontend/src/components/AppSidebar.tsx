@@ -37,6 +37,7 @@ import { useApolloClient, useQuery, gql } from "@apollo/client";
 import { GET_CONVERSATIONS_QUERY } from "@/graphql/chat";
 import { useEffect, useState } from "react";
 import { socketService } from "@/lib/socket";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
@@ -240,6 +241,17 @@ export function AppSidebar() {
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div className="space-y-3">
+              {/* Notifications */}
+              {open ? (
+                <div className="flex items-center gap-2">
+                  <NotificationsDropdown />
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <NotificationsDropdown />
+                </div>
+              )}
+              
               {/* Profile Link */}
               <NavLink
                 to="/profile"

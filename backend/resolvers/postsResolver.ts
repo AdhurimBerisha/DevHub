@@ -1,4 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, NotificationType } from "@prisma/client";
+import { Server as SocketIOServer } from "socket.io";
+import {
+  createOrUpdateVoteNotification,
+  deleteVoteNotification,
+} from "../utils/notifications.js";
 
 const prisma = new PrismaClient();
 
@@ -608,12 +613,20 @@ export const postsResolver = {
     votePost: async (
       _: unknown,
       { postId, value }: { postId: string; value: number },
-      { user }: { user: any }
+      { user, io }: { user: any; io?: SocketIOServer }
     ) => {
       if (!user) throw new Error("Authentication required");
       if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
 
       try {
+        // Get the post to find the author
+        const post = await prisma.post.findUnique({
+          where: { id: postId },
+          select: { authorId: true },
+        });
+
+        if (!post) throw new Error("Post not found");
+
         let vote;
         const existingVote = await prisma.vote.findUnique({
           where: { userId_postId: { userId: user.id, postId } },
@@ -622,18 +635,59 @@ export const postsResolver = {
         if (existingVote) {
           if (value === 0) {
             await prisma.vote.delete({ where: { id: existingVote.id } });
+            
+            // Delete notification if vote removed
+            await deleteVoteNotification({
+              userId: post.authorId,
+              postId,
+              commentId: null,
+              triggeredById: user.id,
+              prisma,
+            });
           } else {
             vote = await prisma.vote.update({
               where: { id: existingVote.id },
               data: { value },
               include: { user: { select: { id: true, username: true } } },
             });
+
+            // Update/create notification
+            if (post.authorId !== user.id && io) {
+              await createOrUpdateVoteNotification({
+                userId: post.authorId,
+                postId,
+                commentId: null,
+                triggeredById: user.id,
+                type:
+                  value === 1
+                    ? NotificationType.POST_UPVOTE
+                    : NotificationType.POST_DOWNVOTE,
+                prisma,
+                io,
+              });
+            }
           }
         } else if (value !== 0) {
           vote = await prisma.vote.create({
             data: { userId: user.id, postId, value },
             include: { user: { select: { id: true, username: true } } },
           });
+
+          // Don't notify if user votes on their own post
+          if (post.authorId !== user.id && io) {
+            await createOrUpdateVoteNotification({
+              userId: post.authorId,
+              postId,
+              commentId: null,
+              triggeredById: user.id,
+              type:
+                value === 1
+                  ? NotificationType.POST_UPVOTE
+                  : NotificationType.POST_DOWNVOTE,
+              prisma,
+              io,
+            });
+          }
         }
 
         return vote;
@@ -646,12 +700,20 @@ export const postsResolver = {
     voteComment: async (
       _: unknown,
       { commentId, value }: { commentId: string; value: number },
-      { user }: { user: any }
+      { user, io }: { user: any; io?: SocketIOServer }
     ) => {
       if (!user) throw new Error("Authentication required");
       if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
 
       try {
+        // Get the comment to find the author
+        const comment = await prisma.comment.findUnique({
+          where: { id: commentId },
+          select: { authorId: true },
+        });
+
+        if (!comment) throw new Error("Comment not found");
+
         const existingVote = await prisma.vote.findUnique({
           where: { userId_commentId: { userId: user.id, commentId } },
           include: { user: { select: { id: true, username: true } } },
@@ -659,25 +721,66 @@ export const postsResolver = {
 
         if (existingVote && existingVote.value === value) {
           await prisma.vote.delete({ where: { id: existingVote.id } });
+          
+          // Delete notification if vote removed
+          await deleteVoteNotification({
+            userId: comment.authorId,
+            postId: null,
+            commentId,
+            triggeredById: user.id,
+            prisma,
+          });
+          
           return null;
         }
 
+        let vote;
         if (existingVote) {
-          return await prisma.vote.update({
+          vote = await prisma.vote.update({
             where: { id: existingVote.id },
             data: { value },
             include: { user: { select: { id: true, username: true } } },
           });
-        }
 
-        if (value !== 0) {
-          return await prisma.vote.create({
+          // Update/create notification
+          if (comment.authorId !== user.id && io) {
+            await createOrUpdateVoteNotification({
+              userId: comment.authorId,
+              postId: null,
+              commentId,
+              triggeredById: user.id,
+              type:
+                value === 1
+                  ? NotificationType.COMMENT_UPVOTE
+                  : NotificationType.COMMENT_DOWNVOTE,
+              prisma,
+              io,
+            });
+          }
+        } else if (value !== 0) {
+          vote = await prisma.vote.create({
             data: { userId: user.id, commentId, value },
             include: { user: { select: { id: true, username: true } } },
           });
+
+          // Don't notify if user votes on their own comment
+          if (comment.authorId !== user.id && io) {
+            await createOrUpdateVoteNotification({
+              userId: comment.authorId,
+              postId: null,
+              commentId,
+              triggeredById: user.id,
+              type:
+                value === 1
+                  ? NotificationType.COMMENT_UPVOTE
+                  : NotificationType.COMMENT_DOWNVOTE,
+              prisma,
+              io,
+            });
+          }
         }
 
-        return null;
+        return vote || null;
       } catch (error) {
         console.error("Error voting comment:", error);
         throw new Error("Failed to vote comment");

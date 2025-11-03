@@ -204,6 +204,36 @@ class SocketService {
       this.socket.off("conversation_ready", callback);
     }
   }
+
+  onNotification(callback: (notification: any) => void): void {
+    if (this.socket) {
+      this.socket.on("new_notification", callback);
+    }
+  }
+
+  offNotification(callback: (notification: any) => void): void {
+    if (this.socket) {
+      this.socket.off("new_notification", callback);
+    }
+  }
+
+  markNotificationRead(notificationId: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit("mark_notification_read", notificationId);
+    }
+  }
+
+  onNotificationRead(callback: (notificationId: string) => void): void {
+    if (this.socket) {
+      this.socket.on("notification_read", callback);
+    }
+  }
+
+  offNotificationRead(callback: (notificationId: string) => void): void {
+    if (this.socket) {
+      this.socket.off("notification_read", callback);
+    }
+  }
 }
 
 export const socketService = new SocketService();

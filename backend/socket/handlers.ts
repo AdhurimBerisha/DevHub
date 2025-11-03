@@ -223,6 +223,25 @@ export function setupSocketHandlers(io: SocketIOServer, prisma: PrismaClient) {
       }
     );
 
+    socket.on("mark_notification_read", async (notificationId: string) => {
+      try {
+        const notification = await prisma.notification.findUnique({
+          where: { id: notificationId },
+        });
+
+        if (notification && notification.userId === user.id) {
+          await prisma.notification.update({
+            where: { id: notificationId },
+            data: { read: true },
+          });
+          socket.emit("notification_read", notificationId);
+        }
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+        socket.emit("error", "Failed to mark notification as read");
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`❌ User ${user.username} (${user.id}) disconnected`);
     });
