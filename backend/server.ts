@@ -11,6 +11,7 @@ import { createSocketAuthMiddleware } from "./socket/auth.js";
 import { setupSocketHandlers } from "./socket/handlers.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import uploadRouter from "./routes/upload.js";
+import emailService from "./utils/email.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -80,6 +81,9 @@ setupSocketHandlers(io, prisma);
 
 const startServer = async () => {
   await connectDB();
+
+  await emailService.testConnection();
+
   await server.start();
 
   app.use(createAuthMiddleware(prisma));

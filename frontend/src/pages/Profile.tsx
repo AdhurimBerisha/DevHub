@@ -2,7 +2,7 @@ import { User, Calendar, Mail, Edit, Loader2, Upload, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client";
 import {
@@ -18,8 +18,10 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
 import { Pagination } from "@/components/Pagination";
 import { useAuthStore } from "@/stores/authStore";
+import { useProfileStore } from "@/stores/profileStore";
 import { GET_CURRENT_USER, UPDATE_USER } from "@/graphql/userSettings";
-import { GET_USER_QUERY, GET_USER_POSTS } from "@/graphql/auth";
+import { GET_USER_QUERY } from "@/graphql/auth";
+import { GET_USER_POSTS } from "@/graphql/posts";
 
 const POSTS_PER_PAGE = 5;
 
@@ -30,11 +32,21 @@ export default function Profile() {
   const { id } = useParams();
   const isOwnProfile = !id;
 
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ username: "", email: "" });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const {
+    isEditDialogOpen,
+    formData,
+    currentPage,
+    avatarUploading,
+    avatarPreview,
+    setEditDialogOpen,
+    setFormData,
+    updateFormData,
+    resetFormData,
+    setCurrentPage,
+    setAvatarUploading,
+    setAvatarPreview,
+    clearAvatarPreview,
+  } = useProfileStore();
 
   const { token } = useAuthStore();
 
@@ -50,7 +62,11 @@ export default function Profile() {
 
   const userId = isOwnProfile ? userData?.currentUser?.id : userData?.user?.id;
 
-  const { loading: postsLoading, data: postsData, error: postsError } = useQuery(GET_USER_POSTS, {
+  const {
+    loading: postsLoading,
+    data: postsData,
+    error: postsError,
+  } = useQuery(GET_USER_POSTS, {
     variables: { authorId: userId },
     skip: !userId,
     fetchPolicy: "network-only",
@@ -61,17 +77,23 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (open && userData) {
+    if (isEditDialogOpen && userData) {
       const currentUser = isOwnProfile ? userData?.currentUser : userData?.user;
       if (currentUser) {
         setFormData({
           username: currentUser.username || "",
           email: currentUser.email || "",
         });
-        setAvatarPreview(null);
+        clearAvatarPreview();
       }
     }
-  }, [open, userData, isOwnProfile]);
+  }, [
+    isEditDialogOpen,
+    userData,
+    isOwnProfile,
+    setFormData,
+    clearAvatarPreview,
+  ]);
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,8 +144,8 @@ export default function Profile() {
 
     setAvatarUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("avatar", file);
+      const uploadFormData = new FormData();
+      uploadFormData.append("avatar", file);
 
       const BACKEND_URL =
         import.meta.env.VITE_GRAPHQL_URL?.replace("/graphql", "") ||
@@ -135,7 +157,7 @@ export default function Profile() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        body: uploadFormData,
       });
 
       if (!response.ok) {
@@ -159,7 +181,7 @@ export default function Profile() {
 
       await client.refetchQueries({ include: "active" });
 
-      setAvatarPreview(null);
+      clearAvatarPreview();
       if (fileInput) fileInput.value = "";
     } catch (error: unknown) {
       console.error("Avatar upload error:", error);
@@ -178,7 +200,7 @@ export default function Profile() {
   };
 
   const handleCancelAvatarUpload = () => {
-    setAvatarPreview(null);
+    clearAvatarPreview();
     const fileInput = document.getElementById(
       "avatar-upload-dialog"
     ) as HTMLInputElement;
@@ -201,7 +223,7 @@ export default function Profile() {
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
-      setOpen(false);
+      setEditDialogOpen(false);
       await client.refetchQueries({ include: "active" });
     } catch (error) {
       toast({
@@ -270,34 +292,25 @@ export default function Profile() {
   }
 
   const user = isOwnProfile ? userData?.currentUser : userData?.user;
-  
-  // Guard against undefined user (e.g., after sign out)
+
   if (!user) {
     if (isOwnProfile) {
-      // If it's own profile and no user, redirect or show message
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Card className="p-6 max-w-md">
-            <h2 className="text-xl font-bold mb-2">
-              Please sign in
-            </h2>
+            <h2 className="text-xl font-bold mb-2">Please sign in</h2>
             <p className="text-muted-foreground mb-4">
               You need to be signed in to view your profile.
             </p>
-            <Button onClick={() => navigate("/auth")}>
-              Go to Sign In
-            </Button>
+            <Button onClick={() => navigate("/auth")}>Go to Sign In</Button>
           </Card>
         </div>
       );
     } else {
-      // If viewing another user's profile and not found
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Card className="p-6 max-w-md">
-            <h2 className="text-xl font-bold mb-2">
-              User not found
-            </h2>
+            <h2 className="text-xl font-bold mb-2">User not found</h2>
             <p className="text-muted-foreground">
               The user profile you're looking for doesn't exist.
             </p>
@@ -354,7 +367,10 @@ export default function Profile() {
 
               {/* Edit only for own profile */}
               {isOwnProfile && (
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog
+                  open={isEditDialogOpen}
+                  onOpenChange={setEditDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button
                       size="sm"
@@ -462,10 +478,7 @@ export default function Profile() {
                           id="username"
                           value={formData.username}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              username: e.target.value,
-                            })
+                            updateFormData({ username: e.target.value })
                           }
                         />
                       </div>
@@ -476,10 +489,7 @@ export default function Profile() {
                           type="email"
                           value={formData.email}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              email: e.target.value,
-                            })
+                            updateFormData({ email: e.target.value })
                           }
                         />
                       </div>
@@ -487,7 +497,7 @@ export default function Profile() {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setOpen(false)}
+                          onClick={() => setEditDialogOpen(false)}
                         >
                           Cancel
                         </Button>

@@ -36,6 +36,11 @@ model User {
   gender    String?
   avatar    String?
   
+  // Email verification
+  emailVerified Boolean @default(false)
+  emailVerificationToken String?
+  emailVerificationTokenExpires DateTime?
+  
   // OAuth fields
   googleId  String?  @unique
   authProvider String? // "email", "google", etc.

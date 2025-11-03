@@ -84,7 +84,7 @@ export function NotificationsDropdown() {
   const { data: countData, refetch: refetchCount } = useQuery(
     GET_UNREAD_NOTIFICATION_COUNT_QUERY,
     {
-      pollInterval: 10000, // Poll every 10 seconds
+      pollInterval: 10000,
       fetchPolicy: "cache-and-network",
     }
   );
@@ -102,7 +102,6 @@ export function NotificationsDropdown() {
       refetch();
       refetchCount();
 
-      // Show toast notification
       toast({
         title: "New Notification",
         description: getNotificationText(notification),
@@ -136,7 +135,6 @@ export function NotificationsDropdown() {
       }
     }
 
-    // Navigate to the relevant post
     if (notification.post) {
       navigate(`/post/${notification.post.id}`);
     } else if (notification.comment?.post?.id) {
@@ -170,17 +168,21 @@ export function NotificationsDropdown() {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size={sidebarOpen ? "default" : "icon"} 
-          className={`relative ${sidebarOpen ? "w-full justify-start gap-2" : ""}`}
+        <Button
+          variant="ghost"
+          size={sidebarOpen ? "default" : "icon"}
+          className={`relative ${
+            sidebarOpen ? "w-full justify-start gap-2" : ""
+          }`}
         >
           <Bell className="h-5 w-5 shrink-0" />
           {sidebarOpen && <span>Notifications</span>}
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className={`absolute -top-1 ${sidebarOpen ? "-right-1" : "-right-1"} h-5 w-5 flex items-center justify-center p-0 text-xs shrink-0`}
+              className={`absolute -top-1 ${
+                sidebarOpen ? "-right-1" : "-right-1"
+              } h-5 w-5 flex items-center justify-center p-0 text-xs shrink-0`}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
@@ -256,4 +258,3 @@ export function NotificationsDropdown() {
     </DropdownMenu>
   );
 }
-

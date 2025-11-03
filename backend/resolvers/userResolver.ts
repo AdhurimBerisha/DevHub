@@ -7,6 +7,8 @@ import {
   validateUsername,
   normalizeEmail,
 } from "../utils/validator";
+import emailService from "../utils/email.js";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -26,6 +28,7 @@ export const userResolver = {
           role: true,
           gender: true,
           avatar: true,
+          emailVerified: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -68,6 +71,7 @@ export const userResolver = {
             role: true,
             gender: true,
             avatar: true,
+            emailVerified: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -92,6 +96,7 @@ export const userResolver = {
             role: true,
             gender: true,
             avatar: true,
+            emailVerified: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -166,25 +171,54 @@ export const userResolver = {
         const hashedPassword = await hashPassword(input.password);
         const roleValue = (input.role as "USER" | "ADMIN") || "USER";
 
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpires = new Date();
+        tokenExpires.setHours(tokenExpires.getHours() + 24);
+
         const user = await prisma.user.create({
           data: {
             email,
             username: input.username.trim(),
             password: hashedPassword,
             role: roleValue,
+            emailVerified: false,
+            emailVerificationToken: verificationToken,
+            emailVerificationTokenExpires: tokenExpires,
+            authProvider: "email",
+          },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            emailVerified: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
+
+        try {
+          await emailService.sendVerificationEmail(
+            user.email,
+            verificationToken,
+            user.username
+          );
+        } catch (emailError) {
+          console.error("Failed to send verification email:", emailError);
+        }
 
         const token = generateToken(user.id, user.email, user.role);
 
         return {
           success: true,
-          message: "User created successfully",
+          message:
+            "User created successfully. Please check your email to verify your account.",
           user: {
             id: user.id,
             email: user.email,
             username: user.username,
             role: user.role,
+            emailVerified: user.emailVerified,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
@@ -276,6 +310,7 @@ export const userResolver = {
             role: true,
             gender: true,
             avatar: true,
+            emailVerified: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -307,6 +342,17 @@ export const userResolver = {
 
         const user = await prisma.user.findUnique({
           where: { email },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            password: true,
+            role: true,
+            emailVerified: true,
+            authProvider: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
 
         if (!user) {
@@ -332,6 +378,24 @@ export const userResolver = {
           };
         }
 
+        if (!user.emailVerified && user.authProvider === "email") {
+          return {
+            success: false,
+            message:
+              "Please verify your email before logging in. Check your inbox for the verification link.",
+            user: {
+              id: user.id,
+              email: user.email,
+              username: user.username,
+              role: user.role,
+              emailVerified: user.emailVerified,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
+            },
+            token: null,
+          };
+        }
+
         const token = generateToken(user.id, user.email, user.role);
 
         return {
@@ -342,6 +406,7 @@ export const userResolver = {
             email: user.email,
             username: user.username,
             role: user.role,
+            emailVerified: user.emailVerified,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
@@ -386,6 +451,19 @@ export const userResolver = {
           where: {
             OR: [{ email }, { googleId: googleUser.sub }],
           },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            googleId: true,
+            authProvider: true,
+            avatar: true,
+            emailVerified: true,
+            createdAt: true,
+            updatedAt: true,
+            password: true,
+          },
         });
 
         if (user) {
@@ -395,15 +473,44 @@ export const userResolver = {
               data: {
                 googleId: googleUser.sub,
                 authProvider: "google",
-
                 avatar: user.avatar || googleUser.picture,
+                emailVerified: true,
+              },
+              select: {
+                id: true,
+                email: true,
+                username: true,
+                role: true,
+                googleId: true,
+                authProvider: true,
+                avatar: true,
+                emailVerified: true,
+                createdAt: true,
+                updatedAt: true,
+                password: true,
               },
             });
           } else {
             if (!user.avatar && googleUser.picture) {
               user = await prisma.user.update({
                 where: { id: user.id },
-                data: { avatar: googleUser.picture },
+                data: {
+                  avatar: googleUser.picture,
+                  emailVerified: true,
+                },
+                select: {
+                  id: true,
+                  email: true,
+                  username: true,
+                  role: true,
+                  googleId: true,
+                  authProvider: true,
+                  avatar: true,
+                  emailVerified: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  password: true,
+                },
               });
             }
           }
@@ -428,6 +535,7 @@ export const userResolver = {
               authProvider: "google",
               avatar: googleUser.picture,
               password: "",
+              emailVerified: true,
             },
           });
         }
@@ -451,6 +559,7 @@ export const userResolver = {
             email: user.email,
             username: user.username,
             role: user.role,
+            emailVerified: user.emailVerified || true,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
@@ -482,6 +591,143 @@ export const userResolver = {
       } catch (error) {
         console.error("Error deleting user:", error);
         return false;
+      }
+    },
+
+    verifyEmail: async (
+      _: unknown,
+      { token }: { token: string },
+      context: { user?: any }
+    ) => {
+      try {
+        const user = await prisma.user.findFirst({
+          where: {
+            emailVerificationToken: token,
+            emailVerificationTokenExpires: {
+              gt: new Date(),
+            },
+          },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            message: "Invalid or expired verification token",
+            user: null,
+            token: null,
+          };
+        }
+
+        const updatedUser = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerified: true,
+            emailVerificationToken: null,
+            emailVerificationTokenExpires: null,
+          },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            role: true,
+            emailVerified: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        const jwtToken = generateToken(
+          updatedUser.id,
+          updatedUser.email,
+          updatedUser.role
+        );
+
+        return {
+          success: true,
+          message: "Email verified successfully",
+          user: updatedUser,
+          token: jwtToken,
+        };
+      } catch (error: any) {
+        console.error("Error verifying email:", error);
+        return {
+          success: false,
+          message: error.message || "Failed to verify email",
+          user: null,
+          token: null,
+        };
+      }
+    },
+
+    resendVerificationEmail: async (
+      _: unknown,
+      __: unknown,
+      context: { user: any }
+    ) => {
+      if (!context.user) {
+        return {
+          success: false,
+          message: "Authentication required",
+          user: null,
+          token: null,
+        };
+      }
+
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: context.user.id },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            message: "User not found",
+            user: null,
+            token: null,
+          };
+        }
+
+        if (user.emailVerified) {
+          return {
+            success: false,
+            message: "Email is already verified",
+            user: null,
+            token: null,
+          };
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpires = new Date();
+        tokenExpires.setHours(tokenExpires.getHours() + 24);
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerificationToken: verificationToken,
+            emailVerificationTokenExpires: tokenExpires,
+          },
+        });
+
+        await emailService.sendVerificationEmail(
+          user.email,
+          verificationToken,
+          user.username
+        );
+
+        return {
+          success: true,
+          message: "Verification email sent successfully",
+          user: null,
+          token: null,
+        };
+      } catch (error: any) {
+        console.error("Error resending verification email:", error);
+        return {
+          success: false,
+          message: error.message || "Failed to resend verification email",
+          user: null,
+          token: null,
+        };
       }
     },
   },

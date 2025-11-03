@@ -51,13 +51,17 @@ export const notificationsResolver = {
         return notifications;
       } catch (error: any) {
         console.error("Error fetching notifications:", error);
-        
-        // Check if it's a table doesn't exist error
-        if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
-          console.warn("Notifications table does not exist. Please run database migration.");
-          return []; // Return empty array instead of throwing error
+
+        if (
+          error?.code === "P2021" ||
+          error?.message?.includes("does not exist")
+        ) {
+          console.warn(
+            "Notifications table does not exist. Please run database migration."
+          );
+          return [];
         }
-        
+
         throw new Error("Failed to fetch notifications");
       }
     },
@@ -80,13 +84,17 @@ export const notificationsResolver = {
         return count;
       } catch (error: any) {
         console.error("Error counting unread notifications:", error);
-        
-        // Check if it's a table doesn't exist error
-        if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
-          console.warn("Notifications table does not exist. Please run database migration.");
-          return 0; // Return 0 instead of throwing error
+
+        if (
+          error?.code === "P2021" ||
+          error?.message?.includes("does not exist")
+        ) {
+          console.warn(
+            "Notifications table does not exist. Please run database migration."
+          );
+          return 0;
         }
-        
+
         throw new Error("Failed to count unread notifications");
       }
     },
@@ -151,4 +159,3 @@ export const notificationsResolver = {
     },
   },
 };
-

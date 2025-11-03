@@ -250,7 +250,10 @@ export const postsResolver = {
           return {
             ...post,
             tags: (post.tags as any[]).map((pt) => pt.tag),
-            voteCount: post.votes.reduce((sum: number, v: any) => sum + v.value, 0),
+            voteCount: post.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
             comments: (post.comments as any[]).map((c: any) => ({
               ...c,
               likes: c.votes.filter((v: any) => v.value === 1),
@@ -619,7 +622,6 @@ export const postsResolver = {
       if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
 
       try {
-        // Get the post to find the author
         const post = await prisma.post.findUnique({
           where: { id: postId },
           select: { authorId: true },
@@ -635,8 +637,7 @@ export const postsResolver = {
         if (existingVote) {
           if (value === 0) {
             await prisma.vote.delete({ where: { id: existingVote.id } });
-            
-            // Delete notification if vote removed
+
             await deleteVoteNotification({
               userId: post.authorId,
               postId,
@@ -651,7 +652,6 @@ export const postsResolver = {
               include: { user: { select: { id: true, username: true } } },
             });
 
-            // Update/create notification
             if (post.authorId !== user.id && io) {
               await createOrUpdateVoteNotification({
                 userId: post.authorId,
@@ -673,7 +673,6 @@ export const postsResolver = {
             include: { user: { select: { id: true, username: true } } },
           });
 
-          // Don't notify if user votes on their own post
           if (post.authorId !== user.id && io) {
             await createOrUpdateVoteNotification({
               userId: post.authorId,
@@ -706,7 +705,6 @@ export const postsResolver = {
       if (![1, -1, 0].includes(value)) throw new Error("Invalid vote value");
 
       try {
-        // Get the comment to find the author
         const comment = await prisma.comment.findUnique({
           where: { id: commentId },
           select: { authorId: true },
@@ -721,8 +719,7 @@ export const postsResolver = {
 
         if (existingVote && existingVote.value === value) {
           await prisma.vote.delete({ where: { id: existingVote.id } });
-          
-          // Delete notification if vote removed
+
           await deleteVoteNotification({
             userId: comment.authorId,
             postId: null,
@@ -730,7 +727,7 @@ export const postsResolver = {
             triggeredById: user.id,
             prisma,
           });
-          
+
           return null;
         }
 
@@ -742,7 +739,6 @@ export const postsResolver = {
             include: { user: { select: { id: true, username: true } } },
           });
 
-          // Update/create notification
           if (comment.authorId !== user.id && io) {
             await createOrUpdateVoteNotification({
               userId: comment.authorId,
@@ -763,7 +759,6 @@ export const postsResolver = {
             include: { user: { select: { id: true, username: true } } },
           });
 
-          // Don't notify if user votes on their own comment
           if (comment.authorId !== user.id && io) {
             await createOrUpdateVoteNotification({
               userId: comment.authorId,

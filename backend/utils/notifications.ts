@@ -22,13 +22,11 @@ export async function createOrUpdateVoteNotification({
   prisma: PrismaClient;
   io?: SocketIOServer;
 }): Promise<any> {
-  // Don't notify if user votes on their own content
   if (userId === triggeredById) {
     return null;
   }
 
   try {
-    // Check if notification already exists
     const existing = await prisma.notification.findFirst({
       where: {
         userId,
@@ -41,7 +39,6 @@ export async function createOrUpdateVoteNotification({
 
     let notification;
     if (existing) {
-      // Update to mark as unread and refresh timestamp
       notification = await prisma.notification.update({
         where: { id: existing.id },
         data: { read: false, createdAt: new Date() },
@@ -57,7 +54,6 @@ export async function createOrUpdateVoteNotification({
         },
       });
     } else {
-      // Create new notification
       notification = await prisma.notification.create({
         data: {
           userId,
@@ -79,7 +75,6 @@ export async function createOrUpdateVoteNotification({
       });
     }
 
-    // Emit real-time notification via Socket.IO
     if (io) {
       io.to(`user:${userId}`).emit("new_notification", {
         id: notification.id,
@@ -136,4 +131,3 @@ export async function deleteVoteNotification({
     console.error("Error deleting notification:", error);
   }
 }
-

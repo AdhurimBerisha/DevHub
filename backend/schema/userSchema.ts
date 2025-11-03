@@ -47,6 +47,10 @@ export const userTypeDefs = gql`
     deleteUser(id: ID!): Boolean!
     login(input: LoginInput!): LoginResponse!
     loginWithGoogle(token: String!): LoginResponse!
+    
+    # Email verification
+    verifyEmail(token: String!): AuthResponse!
+    resendVerificationEmail: AuthResponse!
 
     # 👇 Friendship-related mutations
     sendFriendRequest(receiverId: ID!): Friendship!
@@ -64,6 +68,7 @@ export const userTypeDefs = gql`
     role: UserRole!
     gender: String
     avatar: String
+    emailVerified: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
     isFriend: Boolean

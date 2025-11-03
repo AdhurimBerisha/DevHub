@@ -1,22 +1,41 @@
 import { gql } from "@apollo/client";
 
-export const LOGIN_MUTATION = gql`
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      success
-      message
-      user {
-        id
-        email
-        username
-        role
-        createdAt
-        updatedAt
-      }
-      token
+// ================== Queries ==================
+
+export const GET_USERS_QUERY = gql`
+  query GetUsers {
+    users {
+      id
+      email
+      username
+      role
+      gender
+      avatar
+      createdAt
+      updatedAt
+      isFriend
+      friendshipId
     }
   }
 `;
+
+export const GET_USER_QUERY = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      email
+      username
+      role
+      gender
+      avatar
+      emailVerified
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+// ================== Mutations ==================
 
 export const CREATE_USER_MUTATION = gql`
   mutation CreateUser($input: CreateUserInput!) {
@@ -28,6 +47,26 @@ export const CREATE_USER_MUTATION = gql`
         email
         username
         role
+        emailVerified
+        createdAt
+        updatedAt
+      }
+      token
+    }
+  }
+`;
+
+export const LOGIN_MUTATION = gql`
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      success
+      message
+      user {
+        id
+        email
+        username
+        role
+        emailVerified
         createdAt
         updatedAt
       }
@@ -46,6 +85,7 @@ export const LOGIN_WITH_GOOGLE_MUTATION = gql`
         email
         username
         role
+        emailVerified
         createdAt
         updatedAt
       }
@@ -54,74 +94,30 @@ export const LOGIN_WITH_GOOGLE_MUTATION = gql`
   }
 `;
 
-export const GET_USERS_QUERY = gql`
-  query GetUsersAndFriendRequests {
-    users {
-      id
-      email
-      username
-      role
-      isFriend
-      friendshipId
-      createdAt
-      updatedAt
-    }
-    friendRequests {
-      id
-      status
-      requester {
+export const VERIFY_EMAIL_MUTATION = gql`
+  mutation VerifyEmail($token: String!) {
+    verifyEmail(token: $token) {
+      success
+      message
+      user {
         id
+        email
         username
+        role
+        emailVerified
+        createdAt
+        updatedAt
       }
-      receiver {
-        id
-        username
-      }
-      createdAt
-      updatedAt
+      token
     }
   }
 `;
 
-export const GET_USER_QUERY = gql`
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      email
-      username
-      role
-      avatar
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-export const GET_USER_POSTS = gql`
-  query GetUserPosts($authorId: ID!) {
-    posts(authorId: $authorId) {
-      id
-      title
-      content
-      createdAt
-      viewCount
-      commentCount
-      tags {
-        id
-        name
-        color
-      }
-      votes {
-        id
-        value
-        user {
-          id
-          username
-        }
-      }
-      comments {
-        id
-      }
+export const RESEND_VERIFICATION_EMAIL_MUTATION = gql`
+  mutation ResendVerificationEmail {
+    resendVerificationEmail {
+      success
+      message
     }
   }
 `;

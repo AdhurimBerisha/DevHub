@@ -239,6 +239,50 @@ export const GET_POST_QUERY = gql`
   }
 `;
 
+export const GET_USER_POSTS = gql`
+  query GetUserPosts($authorId: ID!) {
+    posts(authorId: $authorId, published: true) {
+      id
+      title
+      content
+      image
+      communityId
+      published
+      featured
+      viewCount
+      createdAt
+      updatedAt
+      author {
+        id
+        username
+        email
+      }
+      community {
+        id
+        name
+        slug
+        description
+        memberCount
+      }
+      tags {
+        id
+        name
+        color
+      }
+      commentCount
+      votes {
+        id
+        value
+        user {
+          id
+          username
+        }
+      }
+      isSaved
+    }
+  }
+`;
+
 // ================== Mutations ==================
 
 export const CREATE_POST_MUTATION = gql`
