@@ -10,7 +10,7 @@ import { GET_POSTS_QUERY } from "@/graphql/posts";
 import { PostCard } from "@/components/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Users } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarCard } from "@/components/SidebarCard";
@@ -166,6 +166,17 @@ export default function CommunityDetails() {
               description={community.description}
               sticky={true}
             >
+              {community.memberCount !== undefined && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Users className="h-4 w-4" />
+                  <span>
+                    {community.memberCount?.toLocaleString?.() ??
+                      community.memberCount}{" "}
+                    members
+                  </span>
+                </div>
+              )}
+
               {/* Join / Leave / Manage Logic */}
               {currentUser && community.owner?.id === currentUser.id ? (
                 <Link to={`/communities/${community.id}/manage`}>
