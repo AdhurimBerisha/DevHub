@@ -487,13 +487,47 @@ export const postsResolver = {
           include: {
             author: { select: { id: true, username: true, email: true } },
             tags: { include: { tag: true } },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
+            },
+            comments: {
+              where: { parentCommentId: null },
+              include: {
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
+                },
+                replies: {
+                  include: {
+                    author: { select: { id: true, username: true } },
+                    votes: {
+                      include: {
+                        user: { select: { id: true, username: true } },
+                      },
+                    },
+                  },
+                  orderBy: { createdAt: "asc" },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            },
           },
         });
+
+        const mappedPost = {
+          ...post,
+          tags: (post.tags as any[]).map((pt: any) => pt.tag),
+          votes: post.votes || [],
+          comments: post.comments?.map((c: any) => ({
+            ...c,
+            replies: c.replies || [],
+          })) || [],
+        };
 
         return {
           success: true,
           message: "Post updated successfully",
-          post: { ...post, tags: (post.tags as any[]).map((pt) => pt.tag) },
+          post: mappedPost,
         };
       } catch (error) {
         console.error("Error updating post:", error);

@@ -32,6 +32,7 @@ export interface Post {
   content: string;
   image?: string | null;
   createdAt: string;
+  updatedAt?: string;
   author: {
     username: string;
   };

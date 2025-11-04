@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Users2,
   Bookmark,
+  FileEdit,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavLink } from "react-router-dom";
@@ -62,6 +63,7 @@ const mainItems = [
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "What's Hot", url: "/hot", icon: TrendingUp },
   { title: "Saved Posts", url: "/saved", icon: Bookmark },
+  { title: "Drafts", url: "/drafts", icon: FileEdit },
   { title: "Create Post", url: "/create-post", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

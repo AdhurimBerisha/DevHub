@@ -16,7 +16,6 @@ export const postsTypeDefs = gql`
     voteCount: Int! # computed as sum of vote values
     published: Boolean!
     featured: Boolean!
-    viewCount: Int!
     isSaved: Boolean # whether the current user has saved this post
     createdAt: DateTime!
     updatedAt: DateTime!

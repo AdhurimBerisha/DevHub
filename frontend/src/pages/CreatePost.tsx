@@ -72,11 +72,18 @@ export default function CreatePost() {
   >(CREATE_POST_MUTATION, {
     onCompleted: (data) => {
       if (data.createPost.success) {
+        const isPublished = data.createPost.post?.published;
         toast({
           title: "Success",
-          description: "Post created successfully",
+          description: isPublished
+            ? "Post created and published successfully"
+            : "Post saved as draft successfully",
         });
-        navigate(`/post/${data.createPost.post.id}`);
+        if (isPublished) {
+          navigate(`/post/${data.createPost.post.id}`);
+        } else {
+          navigate("/drafts");
+        }
       } else {
         toast({
           title: "Error",
@@ -99,11 +106,18 @@ export default function CreatePost() {
   const [updatePost] = useMutation(UPDATE_POST_MUTATION, {
     onCompleted: (data) => {
       if (data.updatePost.success) {
+        const isPublished = data.updatePost.post?.published;
         toast({
           title: "Success",
-          description: "Post updated successfully",
+          description: isPublished
+            ? "Post updated and published successfully"
+            : "Post updated successfully",
         });
-        navigate(`/post/${data.updatePost.post.id}`);
+        if (isPublished) {
+          navigate(`/post/${data.updatePost.post.id}`);
+        } else {
+          navigate("/drafts");
+        }
       } else {
         toast({
           title: "Error",

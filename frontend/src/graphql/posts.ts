@@ -8,12 +8,14 @@ export const GET_POSTS_QUERY = gql`
     $offset: Int
     $published: Boolean
     $communityId: ID
+    $authorId: ID
   ) {
     posts(
       limit: $limit
       offset: $offset
       published: $published
       communityId: $communityId
+      authorId: $authorId
     ) {
       id
       communityId

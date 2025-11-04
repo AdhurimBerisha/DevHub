@@ -26,6 +26,7 @@ import Settings from "./pages/Settings";
 import Chat from "./pages/Chat";
 import Users from "./pages/Users";
 import SavedPosts from "./pages/SavedPosts";
+import Drafts from "./pages/Drafts";
 import CommunityGuide from "./pages/CommunityGuide";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -82,6 +83,14 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <SavedPosts />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/drafts"
+                      element={
+                        <ProtectedRoute>
+                          <Drafts />
                         </ProtectedRoute>
                       }
                     />
