@@ -1,5 +1,5 @@
 import { useNavigate, useParams, Link, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowBigUp,
   ArrowBigDown,
@@ -7,13 +7,16 @@ import {
   Share2,
   Bookmark,
   ArrowLeft,
+  Sparkles,
+  Users,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Users } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { usePostStore } from "@/stores/postStore";
 import { formatDistanceToNow } from "date-fns";
@@ -22,12 +25,35 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   GET_POST_QUERY,
   ADD_COMMENT_MUTATION,
+  UPDATE_COMMENT_MUTATION,
+  DELETE_COMMENT_MUTATION,
   VOTE_POST_MUTATION,
   DELETE_POST_MUTATION,
   VOTE_COMMENT_MUTATION,
   SAVE_POST_MUTATION,
   UNSAVE_POST_MUTATION,
 } from "@/graphql/posts";
+
+interface CommentAuthor {
+  id: string;
+  username: string;
+}
+
+interface CommentVote {
+  id: string;
+  value: number;
+  user: CommentAuthor;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  createdAt: string;
+  parentCommentId?: string | null;
+  author: CommentAuthor;
+  votes: CommentVote[];
+  replies?: Comment[];
+}
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -44,6 +70,10 @@ export default function PostDetail() {
     clearReplyText,
     setReplyingTo,
   } = usePostStore();
+
+  // State for editing comments
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState<string>("");
 
   const { loading, error, data } = useQuery(GET_POST_QUERY, {
     variables: { id },
@@ -110,6 +140,36 @@ export default function PostDetail() {
 
   const [unsavePost] = useMutation(UNSAVE_POST_MUTATION, {
     refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [updateComment] = useMutation(UPDATE_COMMENT_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+    onCompleted: () => {
+      setEditingCommentId(null);
+      setEditCommentText("");
+      toast({ title: "Comment updated successfully" });
+    },
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [deleteComment] = useMutation(DELETE_COMMENT_MUTATION, {
+    refetchQueries: [{ query: GET_POST_QUERY, variables: { id } }],
+    onCompleted: () => {
+      toast({ title: "Comment deleted successfully" });
+    },
     onError: (err) => {
       toast({
         title: "Error",
@@ -227,6 +287,71 @@ export default function PostDetail() {
         description: err.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleEditComment = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentText(comment.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditCommentText("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editCommentText.trim()) return;
+
+    try {
+      await updateComment({
+        variables: {
+          id: editingCommentId,
+          content: editCommentText,
+        },
+      });
+    } catch (err) {
+      // Error handled by onError
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+
+    try {
+      await deleteComment({
+        variables: { id: commentId },
+      });
+    } catch (err) {
+      // Error handled by onError
+    }
+  };
+
+  const findCommentById = (comments: Comment[], id: string): Comment | null => {
+    for (const comment of comments) {
+      if (comment.id === id) return comment;
+      if (comment.replies && comment.replies.length > 0) {
+        const found = findCommentById(comment.replies, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const handleEditReply = (reply: Comment) => {
+    setEditingCommentId(reply.id);
+    setEditCommentText(reply.content);
+  };
+
+  const handleDeleteReply = async (replyId: string) => {
+    if (!confirm("Are you sure you want to delete this reply?")) return;
+
+    try {
+      await deleteComment({
+        variables: { id: replyId },
+      });
+    } catch (err) {
+      // Error handled by onError
     }
   };
 
@@ -512,20 +637,74 @@ export default function PostDetail() {
                               </span>
                             </div>
 
-                            <p className="text-sm text-foreground mb-2 ml-8">
-                              {comment.content}
-                            </p>
+                            {editingCommentId === comment.id ? (
+                              <div className="ml-8 space-y-2 mb-2">
+                                <Textarea
+                                  value={editCommentText}
+                                  onChange={(e) =>
+                                    setEditCommentText(e.target.value)
+                                  }
+                                  className="min-h-[80px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    disabled={!editCommentText.trim()}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCancelEdit}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-foreground mb-2 ml-8">
+                                {comment.content}
+                              </p>
+                            )}
 
                             {/* Comment actions */}
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground ml-8">
-                              <button
-                                onClick={() => handleReply(comment.id)}
-                                className="hover:text-foreground flex items-center gap-1"
-                              >
-                                <MessageSquare className="h-3.5 w-3.5" />
-                                Reply
-                              </button>
-                            </div>
+                            {editingCommentId !== comment.id && (
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground ml-8">
+                                <button
+                                  onClick={() => handleReply(comment.id)}
+                                  className="hover:text-foreground flex items-center gap-1"
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5" />
+                                  Reply
+                                </button>
+                                {user &&
+                                  (user.id === comment.author.id ||
+                                    user.role === "ADMIN") && (
+                                    <>
+                                      <button
+                                        onClick={() =>
+                                          handleEditComment(comment)
+                                        }
+                                        className="hover:text-foreground flex items-center gap-1"
+                                      >
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteComment(comment.id)
+                                        }
+                                        className="hover:text-destructive flex items-center gap-1 text-destructive"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+                              </div>
+                            )}
 
                             {/* Reply form */}
                             {replyingTo === comment.id && user && (
@@ -581,9 +760,63 @@ export default function PostDetail() {
                                         ago
                                       </span>
                                     </div>
-                                    <p className="text-sm text-foreground ml-7">
-                                      {reply.content}
-                                    </p>
+                                    {editingCommentId === reply.id ? (
+                                      <div className="ml-7 space-y-2">
+                                        <Textarea
+                                          value={editCommentText}
+                                          onChange={(e) =>
+                                            setEditCommentText(e.target.value)
+                                          }
+                                          className="min-h-[60px]"
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            onClick={handleSaveEdit}
+                                            disabled={!editCommentText.trim()}
+                                          >
+                                            Save
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={handleCancelEdit}
+                                          >
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <p className="text-sm text-foreground ml-7">
+                                          {reply.content}
+                                        </p>
+                                        {user &&
+                                          (user.id === reply.author.id ||
+                                            user.role === "ADMIN") && (
+                                            <div className="flex items-center gap-3 text-xs text-muted-foreground ml-7">
+                                              <button
+                                                onClick={() =>
+                                                  handleEditReply(reply)
+                                                }
+                                                className="hover:text-foreground flex items-center gap-1"
+                                              >
+                                                <Edit className="h-3 w-3" />
+                                                Edit
+                                              </button>
+                                              <button
+                                                onClick={() =>
+                                                  handleDeleteReply(reply.id)
+                                                }
+                                                className="hover:text-destructive flex items-center gap-1 text-destructive"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                                Delete
+                                              </button>
+                                            </div>
+                                          )}
+                                      </>
+                                    )}
                                   </div>
                                 ))}
                               </div>

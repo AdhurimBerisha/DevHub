@@ -418,6 +418,60 @@ export const ADD_COMMENT_MUTATION = gql`
   }
 `;
 
+export const UPDATE_COMMENT_MUTATION = gql`
+  mutation UpdateComment($id: ID!, $content: String!) {
+    updateComment(id: $id, content: $content) {
+      success
+      message
+      comment {
+        id
+        content
+        createdAt
+        updatedAt
+        parentCommentId
+        author {
+          id
+          username
+        }
+        post {
+          id
+        }
+        votes {
+          id
+          value
+          user {
+            id
+            username
+          }
+        }
+        replies {
+          id
+          content
+          createdAt
+          author {
+            id
+            username
+          }
+          votes {
+            id
+            value
+            user {
+              id
+              username
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const DELETE_COMMENT_MUTATION = gql`
+  mutation DeleteComment($id: ID!) {
+    deleteComment(id: $id)
+  }
+`;
+
 export const VOTE_POST_MUTATION = gql`
   mutation VotePost($postId: ID!, $value: Int!) {
     votePost(postId: $postId, value: $value) {

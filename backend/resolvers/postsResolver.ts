@@ -613,6 +613,123 @@ export const postsResolver = {
       }
     },
 
+    updateComment: async (
+      _: unknown,
+      { id, content }: { id: string; content: string },
+      { user }: { user: any }
+    ) => {
+      if (!user)
+        return {
+          success: false,
+          message: "Authentication required",
+          comment: null,
+        };
+
+      try {
+        const existingComment = await (prisma as any).comment.findUnique({
+          where: { id },
+        });
+
+        if (!existingComment)
+          return {
+            success: false,
+            message: "Comment not found",
+            comment: null,
+          };
+
+        if (existingComment.authorId !== user.id && user.role !== "ADMIN")
+          return {
+            success: false,
+            message: "Not authorized to update this comment",
+            comment: null,
+          };
+
+        const updatedComment = await (prisma as any).comment.update({
+          where: { id },
+          data: { content },
+          include: {
+            author: { select: { id: true, username: true } },
+            votes: {
+              include: { user: { select: { id: true, username: true } } },
+            },
+            post: { select: { id: true } },
+            parentComment: existingComment.parentCommentId
+              ? {
+                  include: {
+                    author: { select: { id: true, username: true } },
+                  },
+                }
+              : false,
+            replies: {
+              include: {
+                author: { select: { id: true, username: true } },
+                votes: {
+                  include: { user: { select: { id: true, username: true } } },
+                },
+              },
+              orderBy: { createdAt: "asc" },
+            },
+          },
+        });
+
+        return {
+          success: true,
+          message: "Comment updated successfully",
+          comment: {
+            ...updatedComment,
+            likes: updatedComment.votes.filter((v: any) => v.value === 1),
+            dislikes: updatedComment.votes.filter((v: any) => v.value === -1),
+            voteCount: updatedComment.votes.reduce(
+              (sum: number, v: any) => sum + v.value,
+              0
+            ),
+            replies: updatedComment.replies.map((reply: any) => ({
+              ...reply,
+              likes: reply.votes.filter((v: any) => v.value === 1),
+              dislikes: reply.votes.filter((v: any) => v.value === -1),
+              voteCount: reply.votes.reduce(
+                (sum: number, v: any) => sum + v.value,
+                0
+              ),
+            })),
+          },
+        };
+      } catch (error) {
+        console.error("Error updating comment:", error);
+        return {
+          success: false,
+          message: "Failed to update comment",
+          comment: null,
+        };
+      }
+    },
+
+    deleteComment: async (
+      _: unknown,
+      { id }: { id: string },
+      { user }: { user: any }
+    ) => {
+      if (!user) throw new Error("Authentication required");
+
+      try {
+        const existingComment = await (prisma as any).comment.findUnique({
+          where: { id },
+        });
+
+        if (!existingComment) throw new Error("Comment not found");
+
+        if (existingComment.authorId !== user.id && user.role !== "ADMIN")
+          throw new Error("Not authorized to delete this comment");
+
+        await (prisma as any).comment.delete({ where: { id } });
+
+        return true;
+      } catch (error) {
+        console.error("Error deleting comment:", error);
+        throw new Error("Failed to delete comment");
+      }
+    },
+
     votePost: async (
       _: unknown,
       { postId, value }: { postId: string; value: number },
