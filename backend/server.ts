@@ -20,7 +20,11 @@ const PORT = Number(process.env.PORT) || 4001;
 // Allow your frontend origins
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
-  : ["http://localhost:5173", "http://localhost:8080"];
+  : [
+      "http://localhost:5173",
+      "http://localhost:8080",
+      "https://dev-hub-sandy.vercel.app/",
+    ];
 
 const corsOptions = cors<cors.CorsRequest>({
   origin: (origin, callback) => {
