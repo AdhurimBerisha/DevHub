@@ -10,7 +10,6 @@ import {
   FileText,
   Users,
   MessageCircle,
-  TrendingUp,
 } from "lucide-react";
 import {
   GET_ADMIN_STATS,
@@ -54,11 +53,6 @@ export default function Admin() {
       value: statsData?.adminStats.totalCommunities || 0,
       icon: MessageCircle,
     },
-    {
-      title: "Page Views",
-      value: statsData?.adminStats.totalPageViews || 0,
-      icon: TrendingUp,
-    },
   ];
 
   const handleDelete = async (id: string) => {
@@ -81,7 +75,7 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex items-center justify-between pb-2">

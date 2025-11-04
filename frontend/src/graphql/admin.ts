@@ -7,7 +7,6 @@ export const GET_ADMIN_STATS = gql`
       totalPosts
       totalUsers
       totalCommunities
-      totalPageViews
     }
   }
 `;

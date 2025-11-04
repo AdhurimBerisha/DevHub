@@ -18,7 +18,6 @@ export const adminTypeDefs = gql`
     totalPosts: Int!
     totalUsers: Int!
     totalCommunities: Int!
-    totalPageViews: Int!
   }
 
   type Post {

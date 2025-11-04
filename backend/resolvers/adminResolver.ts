@@ -9,19 +9,14 @@ export const adminResolver = {
         throw new Error("Unauthorized");
       }
 
-      const [totalPosts, totalUsers, totalCommunities, totalPageViewsResult] =
+      const [totalPosts, totalUsers, totalCommunities] =
         await Promise.all([
           prisma.post.count(),
           prisma.user.count(),
           prisma.community.count(),
-          prisma.post.aggregate({
-            _sum: { viewCount: true },
-          }),
         ]);
 
-      const totalPageViews = totalPageViewsResult._sum.viewCount ?? 0;
-
-      return { totalPosts, totalUsers, totalCommunities, totalPageViews };
+      return { totalPosts, totalUsers, totalCommunities };
     },
 
     recentPosts: async (
