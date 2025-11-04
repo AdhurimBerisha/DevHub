@@ -44,7 +44,7 @@ export default function Users() {
       }));
 
       setAllUsers(usersWithFriendship);
-      setFriendRequests(data.friendRequests);
+      setFriendRequests(data.friendRequests || []);
     },
   });
 
@@ -178,7 +178,7 @@ export default function Users() {
         </div>
 
         {/* Friend Requests */}
-        {friendRequests.length > 0 && (
+        {friendRequests && friendRequests.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Friend Requests</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
