@@ -1,12 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { generateToken, hashPassword, comparePassword } from "../utils/auth";
-import { verifyGoogleToken } from "../utils/googleAuth";
+import { generateToken, hashPassword, comparePassword } from "../utils/auth.js";
+import { verifyGoogleToken } from "../utils/googleAuth.js";
 import {
   validateEmail,
   validatePassword,
   validateUsername,
   normalizeEmail,
-} from "../utils/validator";
+} from "../utils/validator.js";
 import emailService from "../utils/email.js";
 import crypto from "crypto";
 
@@ -287,17 +287,17 @@ export const userResolver = {
           const emailValidation = validateEmail(input.email);
           if (!emailValidation.isValid)
             throw new Error(emailValidation.message);
-          
+
           const normalizedNewEmail = normalizeEmail(input.email);
-          
+
           // Get current user to check if email is actually changing
           const currentUser = await prisma.user.findUnique({
             where: { id },
             select: { email: true, username: true },
           });
-          
+
           if (!currentUser) throw new Error("User not found");
-          
+
           // If email is actually changing, set up email change verification
           if (normalizedNewEmail !== currentUser.email) {
             // Check if new email is already taken
@@ -305,21 +305,21 @@ export const userResolver = {
               where: { email: normalizedNewEmail },
               select: { id: true },
             });
-            
+
             if (emailExists) {
               throw new Error("Email is already in use");
             }
-            
+
             // Generate email change token
             const emailChangeToken = crypto.randomBytes(32).toString("hex");
             const tokenExpires = new Date();
             tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours expiry
-            
+
             // Store pending email and token
             updateData.pendingEmail = normalizedNewEmail;
             updateData.emailChangeToken = emailChangeToken;
             updateData.emailChangeTokenExpires = tokenExpires;
-            
+
             // Send verification email to new email address
             try {
               await emailService.sendEmailChangeVerificationEmail(
@@ -329,10 +329,13 @@ export const userResolver = {
                 currentUser.email
               );
             } catch (emailError) {
-              console.error("Failed to send email change verification email:", emailError);
+              console.error(
+                "Failed to send email change verification email:",
+                emailError
+              );
               // Don't throw - allow pending email to be set, user can resend
             }
-            
+
             // Send notification email to old email address
             try {
               await emailService.sendEmailChangeNotificationEmail(
@@ -341,7 +344,10 @@ export const userResolver = {
                 normalizedNewEmail
               );
             } catch (emailError) {
-              console.error("Failed to send email change notification:", emailError);
+              console.error(
+                "Failed to send email change notification:",
+                emailError
+              );
               // Non-critical, continue
             }
           }
@@ -822,7 +828,8 @@ export const userResolver = {
         if (!user || user.authProvider !== "email") {
           return {
             success: true,
-            message: "If an account with that email exists, a password reset link has been sent.",
+            message:
+              "If an account with that email exists, a password reset link has been sent.",
             user: null,
             token: null,
           };
@@ -855,7 +862,8 @@ export const userResolver = {
 
         return {
           success: true,
-          message: "If an account with that email exists, a password reset link has been sent.",
+          message:
+            "If an account with that email exists, a password reset link has been sent.",
           user: null,
           token: null,
         };
