@@ -22,7 +22,6 @@ export const GET_POSTS_QUERY = gql`
       image
       published
       featured
-      viewCount
       createdAt
       updatedAt
       author {
@@ -125,7 +124,6 @@ export const GET_SAVED_POSTS_QUERY = gql`
       image
       published
       featured
-      viewCount
       createdAt
       updatedAt
       author {
@@ -169,7 +167,6 @@ export const GET_POST_QUERY = gql`
       communityId
       published
       featured
-      viewCount
       createdAt
       updatedAt
       author {
@@ -249,7 +246,6 @@ export const GET_USER_POSTS = gql`
       communityId
       published
       featured
-      viewCount
       createdAt
       updatedAt
       author {
@@ -298,7 +294,6 @@ export const CREATE_POST_MUTATION = gql`
         communityId
         published
         featured
-        viewCount
         createdAt
         updatedAt
         author {
@@ -342,7 +337,6 @@ export const UPDATE_POST_MUTATION = gql`
         communityId
         published
         featured
-        viewCount
         createdAt
         updatedAt
         author {

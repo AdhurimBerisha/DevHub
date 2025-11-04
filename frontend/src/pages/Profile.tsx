@@ -263,7 +263,6 @@ export default function Profile() {
       posts: posts.length,
       comments: totalComments,
       reputation: totalLikes * 10,
-      views: posts.reduce((sum, post) => sum + (post.viewCount || 0), 0),
     };
   };
 
@@ -537,10 +536,6 @@ export default function Profile() {
               <div className="text-center">
                 <div className="text-2xl font-bold">{stats.reputation}</div>
                 <div className="text-sm text-muted-foreground">Reputation</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">{stats.views}</div>
-                <div className="text-sm text-muted-foreground">Views</div>
               </div>
             </div>
           </div>

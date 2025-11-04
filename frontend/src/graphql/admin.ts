@@ -24,7 +24,6 @@ export const GET_RECENT_POSTS = gql`
       createdAt
       published
       featured
-      viewCount
     }
   }
 `;

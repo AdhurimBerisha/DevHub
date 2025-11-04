@@ -10,7 +10,6 @@ export interface Post {
   likes: Like[];
   published: boolean;
   featured: boolean;
-  viewCount: number;
   isSaved?: boolean;
   createdAt: string;
   updatedAt: string;

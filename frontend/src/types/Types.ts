@@ -23,6 +23,7 @@ export interface Community {
   name: string;
   slug: string;
   memberCount?: number;
+  description?: string;
 }
 
 export interface Post {
