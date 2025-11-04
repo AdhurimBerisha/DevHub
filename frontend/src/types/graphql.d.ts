@@ -6,10 +6,12 @@ export interface Post {
   author: User;
   tags: PostTag[];
   comments: Comment[];
+  commentCount?: number;
   likes: Like[];
   published: boolean;
   featured: boolean;
   viewCount: number;
+  isSaved?: boolean;
   createdAt: string;
   updatedAt: string;
 }

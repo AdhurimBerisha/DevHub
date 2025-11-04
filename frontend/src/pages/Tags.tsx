@@ -15,6 +15,7 @@ import {
   TAG_SORT_OPTIONS,
   sortTags,
 } from "@/components/FilterSort";
+import { SidebarCard } from "@/components/SidebarCard";
 
 function TagSkeleton() {
   return (
@@ -156,34 +157,21 @@ export default function Tags() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Welcome / Create Tag Card */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold">Welcome to Tags!</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Tags help content get discovered and connect you with
-                  like-minded developers. Explore the tags below to find topics
-                  you're interested in and join the conversation!
-                </p>
-                <Button asChild className="w-full mb-2">
-                  <Link to="/community-guide">Read Community Guide</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <SidebarCard
+              icon={Sparkles}
+              title="Welcome to Tags!"
+              description="Tags help content get discovered and connect you with like-minded developers. Explore the tags below to find topics you're interested in and join the conversation!"
+            >
+              <Button asChild className="w-full mb-2">
+                <Link to="/community-guide">Read Community Guide</Link>
+              </Button>
+            </SidebarCard>
 
             {/* About / Tips Card */}
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="font-bold mb-3">About Tags</h2>
-                <p className="text-sm text-muted-foreground">
-                  Tags help categorize content so users can easily find posts
-                  related to specific topics. Use clear and descriptive names
-                  when creating new tags.
-                </p>
-              </CardContent>
-            </Card>
+            <SidebarCard
+              title="About Tags"
+              description="Tags help categorize content so users can easily find posts related to specific topics. Use clear and descriptive names when creating new tags."
+            />
           </div>
         </div>
 

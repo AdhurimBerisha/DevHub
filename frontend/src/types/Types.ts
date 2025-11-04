@@ -37,5 +37,7 @@ export interface Post {
   tags: { id: string; name: string }[];
   votes: Vote[];
   comments: { id: string }[];
+  commentCount?: number;
   published: boolean;
+  isSaved?: boolean;
 }

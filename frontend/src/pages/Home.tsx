@@ -1,6 +1,5 @@
 import { PostCard } from "@/components/PostCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Sparkles } from "lucide-react";
 import { useQuery } from "@apollo/client";
 import { GET_POPULAR_TAGS, GET_POSTS_QUERY } from "@/graphql/posts";
@@ -8,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PopularTag, Post } from "@/types/Types";
+import { SidebarCard } from "@/components/SidebarCard";
 
 export default function Home() {
   const { user } = useAuth();
@@ -70,57 +70,43 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold">Welcome to DevHub!</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Your home for developer discussions, tutorials, and community
-                  insights.
-                </p>
-                <Button asChild className="w-full mb-2">
-                  <Link to="/create-post">Create Post</Link>
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Link to="/create-community">Create Community</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <SidebarCard
+              icon={Sparkles}
+              title="Welcome to DevHub!"
+              description="Your home for developer discussions, tutorials, and community insights."
+            >
+              <Button asChild className="w-full mb-2">
+                <Link to="/create-post">Create Post</Link>
+              </Button>
+              <Button variant="outline" className="w-full">
+                <Link to="/create-community">Create Community</Link>
+              </Button>
+            </SidebarCard>
 
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="font-bold mb-3">Popular Tags</h2>
-                <div className="space-y-2 text-sm">
-                  {tagsLoading ? (
-                    <Skeleton className="h-4 w-1/2" />
-                  ) : (
-                    tagsData?.popularTags.slice(0, 5).map((tag: PopularTag) => (
-                      <div
-                        key={tag.id}
-                        className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"
-                      >
-                        <span>#{tag.name}</span>
-                        <span className="text-muted-foreground">
-                          {tag.postCount} posts
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <SidebarCard title="Popular Tags">
+              <div className="space-y-2 text-sm">
+                {tagsLoading ? (
+                  <Skeleton className="h-4 w-1/2" />
+                ) : (
+                  tagsData?.popularTags.slice(0, 5).map((tag: PopularTag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center justify-between hover:bg-muted/50 p-2 rounded cursor-pointer"
+                    >
+                      <span>#{tag.name}</span>
+                      <span className="text-muted-foreground">
+                        {tag.postCount} posts
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </SidebarCard>
 
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="font-bold mb-3">About</h2>
-                <p className="text-sm text-muted-foreground">
-                  DevHub is a community of developers sharing knowledge,
-                  experiences, and insights about web development.
-                </p>
-              </CardContent>
-            </Card>
+            <SidebarCard
+              title="About"
+              description="DevHub is a community of developers sharing knowledge, experiences, and insights about web development."
+            />
           </div>
         </div>
       </div>

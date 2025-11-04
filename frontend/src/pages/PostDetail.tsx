@@ -22,6 +22,7 @@ import { usePostStore } from "@/stores/postStore";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { SidebarCard } from "@/components/SidebarCard";
 import {
   GET_POST_QUERY,
   ADD_COMMENT_MUTATION,
@@ -834,43 +835,33 @@ export default function PostDetail() {
           {/* Community Card Sidebar */}
           {post.community && (
             <div className="lg:col-span-1">
-              <div className="sticky top-20">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <h2 className="font-bold">{post.community.name}</h2>
-                    </div>
-                    {post.community.description && (
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {post.community.description}
-                      </p>
-                    )}
-                    {post.community.memberCount !== undefined && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {post.community.memberCount?.toLocaleString?.() ??
-                            post.community.memberCount}{" "}
-                          members
-                        </span>
-                      </div>
-                    )}
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link to={`/communities/${post.community.id}`}>
-                        View Community
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild className="w-full mt-2">
-                      <Link
-                        to={`/create-post?communityId=${post.community.id}`}
-                      >
-                        Create Post
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
+              <SidebarCard
+                icon={Sparkles}
+                title={post.community.name}
+                description={post.community.description || undefined}
+                sticky={true}
+              >
+                {post.community.memberCount !== undefined && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                    <Users className="h-4 w-4" />
+                    <span>
+                      {post.community.memberCount?.toLocaleString?.() ??
+                        post.community.memberCount}{" "}
+                      members
+                    </span>
+                  </div>
+                )}
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to={`/communities/${post.community.id}`}>
+                    View Community
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild className="w-full mt-2">
+                  <Link to={`/create-post?communityId=${post.community.id}`}>
+                    Create Post
+                  </Link>
+                </Button>
+              </SidebarCard>
             </div>
           )}
         </div>

@@ -1,7 +1,6 @@
 import { PostCard } from "@/components/PostCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Sparkles } from "lucide-react";
 import { useQuery } from "@apollo/client";
 import { GET_POSTS_QUERY } from "@/graphql/posts";
@@ -13,6 +12,8 @@ import {
   POST_SORT_OPTIONS,
   sortPosts,
 } from "@/components/FilterSort";
+import { SidebarCard } from "@/components/SidebarCard";
+import { Post } from "@/types/Types";
 
 export default function Posts() {
   const { loading, error, data } = useQuery(GET_POSTS_QUERY, {
@@ -29,7 +30,7 @@ export default function Posts() {
   const filteredAndSortedPosts = useMemo(() => {
     if (!data?.posts) return [];
 
-    const filtered = data.posts.filter(
+    const filtered = (data.posts as Post[]).filter(
       (post) =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,57 +129,46 @@ export default function Posts() {
           {/* Sidebar cards */}
           <div className="space-y-6">
             {/* Share Your Knowledge card */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Plus className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold">Share Your Knowledge</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Have something valuable to say? Write a post and share your
-                  insights with the DevHub community.
-                </p>
-                <Button asChild className="w-full">
-                  <Link to="/create-post">Create a Post</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <SidebarCard
+              icon={Plus}
+              title="Share Your Knowledge"
+              description="Have something valuable to say? Write a post and share your insights with the DevHub community."
+            >
+              <Button asChild className="w-full">
+                <Link to="/create-post">Create a Post</Link>
+              </Button>
+            </SidebarCard>
 
             {/* Trending Tags card */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold">Trending Tags</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Explore topics that are getting the most attention this week.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {["react", "graphql", "nextjs", "typescript", "prisma"].map(
-                    (tag) => {
-                      const isActive =
-                        searchTerm.toLowerCase() === tag.toLowerCase();
+            <SidebarCard
+              icon={Sparkles}
+              title="Trending Tags"
+              description="Explore topics that are getting the most attention this week."
+            >
+              <div className="flex flex-wrap gap-2">
+                {["react", "graphql", "nextjs", "typescript", "prisma"].map(
+                  (tag) => {
+                    const isActive =
+                      searchTerm.toLowerCase() === tag.toLowerCase();
 
-                      return (
-                        <span
-                          key={tag}
-                          onClick={() => setSearchTerm(isActive ? "" : tag)}
-                          className={`text-sm px-3 py-1 rounded-full cursor-pointer transition
+                    return (
+                      <span
+                        key={tag}
+                        onClick={() => setSearchTerm(isActive ? "" : tag)}
+                        className={`text-sm px-3 py-1 rounded-full cursor-pointer transition
         ${
           isActive
             ? "bg-primary text-primary-foreground"
             : "bg-muted hover:bg-muted/70"
         }`}
-                        >
-                          #{tag}
-                        </span>
-                      );
-                    }
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      >
+                        #{tag}
+                      </span>
+                    );
+                  }
+                )}
+              </div>
+            </SidebarCard>
           </div>
         </div>
       </div>

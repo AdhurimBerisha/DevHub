@@ -9,28 +9,12 @@ import {
 import { GET_POSTS_QUERY } from "@/graphql/posts";
 import { PostCard } from "@/components/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  author: { id: string; username: string };
-  community?: { id: string; name: string; slug: string } | null;
-  tags: { id: string; name: string }[];
-  votes: { id: string; value: number; user: { id: string } }[];
-  comments: {
-    id: string;
-    content: string;
-    createdAt?: string;
-    author?: { id: string; username: string };
-  }[];
-}
+import { SidebarCard } from "@/components/SidebarCard";
+import { Post } from "@/types/Types";
 
 export default function CommunityDetails() {
   const { id } = useParams();
@@ -176,58 +160,51 @@ export default function CommunityDetails() {
 
           {/* Right: Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-20">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="font-bold">Welcome to {community.name}!</h2>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {community.description}
-                  </p>
-
-                  {/* Join / Leave / Manage Logic */}
-                  {currentUser && community.owner?.id === currentUser.id ? (
-                    <Link to={`/communities/${community.id}/manage`}>
-                      <Button variant="outline" className="w-full">
-                        Manage
-                      </Button>
-                    </Link>
-                  ) : currentUser && community.isMember ? (
-                    <Button
-                      disabled={leaving}
-                      onClick={() =>
-                        leaveCommunity({
-                          variables: { communityId: community.id },
-                        })
-                      }
-                      className="w-full"
-                    >
-                      {leaving ? "Leaving..." : "Leave"}
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled={joining}
-                      onClick={() =>
-                        joinCommunity({
-                          variables: { communityId: community.id },
-                        })
-                      }
-                      className="w-full"
-                    >
-                      {joining ? "Joining..." : "Join"}
-                    </Button>
-                  )}
-
-                  <Button variant="outline" asChild className="w-full mt-2">
-                    <Link to={`/create-post?communityId=${community.id}`}>
-                      Create Post
-                    </Link>
+            <SidebarCard
+              icon={Sparkles}
+              title={`Welcome to ${community.name}!`}
+              description={community.description}
+              sticky={true}
+            >
+              {/* Join / Leave / Manage Logic */}
+              {currentUser && community.owner?.id === currentUser.id ? (
+                <Link to={`/communities/${community.id}/manage`}>
+                  <Button variant="outline" className="w-full">
+                    Manage
                   </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </Link>
+              ) : currentUser && community.isMember ? (
+                <Button
+                  disabled={leaving}
+                  onClick={() =>
+                    leaveCommunity({
+                      variables: { communityId: community.id },
+                    })
+                  }
+                  className="w-full"
+                >
+                  {leaving ? "Leaving..." : "Leave"}
+                </Button>
+              ) : (
+                <Button
+                  disabled={joining}
+                  onClick={() =>
+                    joinCommunity({
+                      variables: { communityId: community.id },
+                    })
+                  }
+                  className="w-full"
+                >
+                  {joining ? "Joining..." : "Join"}
+                </Button>
+              )}
+
+              <Button variant="outline" asChild className="w-full mt-2">
+                <Link to={`/create-post?communityId=${community.id}`}>
+                  Create Post
+                </Link>
+              </Button>
+            </SidebarCard>
           </div>
         </div>
       </div>
