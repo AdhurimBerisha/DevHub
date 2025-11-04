@@ -23,17 +23,25 @@ const allowedOrigins = process.env.FRONTEND_URL
   : [
       "http://localhost:5173",
       "http://localhost:8080",
-      "https://dev-hub-sandy.vercel.app/",
+      "https://dev-hub-sandy.vercel.app",
     ];
 
 const corsOptions = cors<cors.CorsRequest>({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    // Remove trailing slashes for comparison
+    const normalizedOrigin = origin.replace(/\/$/, "");
+
     if (
-      allowedOrigins.some(
-        (allowed) => origin === allowed || origin.startsWith(allowed)
-      )
+      allowedOrigins.some((allowed) => {
+        const normalizedAllowed = allowed.replace(/\/$/, "");
+        return (
+          normalizedOrigin === normalizedAllowed ||
+          normalizedOrigin.startsWith(normalizedAllowed)
+        );
+      })
     ) {
       return callback(null, true);
     }
@@ -46,6 +54,10 @@ const corsOptions = cors<cors.CorsRequest>({
     callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
+  methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Type"],
+  optionsSuccessStatus: 200,
 });
 
 const socketCorsOptions = {
@@ -96,13 +108,16 @@ const startServer = async () => {
 
   await server.start();
 
+  // Apply CORS globally to handle preflight requests
+  app.use(corsOptions);
+
+  app.use(express.json());
   app.use(createAuthMiddleware(prisma));
-  app.use("/api/upload", corsOptions, uploadRouter);
+
+  app.use("/api/upload", uploadRouter);
 
   app.use(
     "/graphql",
-    corsOptions,
-    express.json(),
     expressMiddleware(server, {
       context: async ({ req }: { req: any }) => ({
         prisma,
