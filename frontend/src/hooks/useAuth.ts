@@ -7,6 +7,7 @@ import {
   LOGIN_WITH_GOOGLE_MUTATION,
 } from "@/graphql/auth";
 import { useGoogleLogin } from "@react-oauth/google";
+import { gql } from "graphql-tag";
 
 interface LoginResponse {
   login: {
@@ -64,8 +65,8 @@ export const useAuth = () => {
         },
       });
 
-      if (data?.login?.success && data?.login?.user && data?.login?.token) {
-        storeLogin(data.login.user, data.login.token);
+      if (data?.login?.success && data?.login?.user) {
+        storeLogin(data.login.user, null);
         toast({
           title: "Welcome back!",
           description: "You have successfully signed in.",
@@ -109,12 +110,8 @@ export const useAuth = () => {
         },
       });
 
-      if (
-        data?.createUser?.success &&
-        data?.createUser?.user &&
-        data?.createUser?.token
-      ) {
-        storeLogin(data.createUser.user, data.createUser.token);
+      if (data?.createUser?.success && data?.createUser?.user) {
+        storeLogin(data.createUser.user, null);
         toast({
           title: "Account created!",
           description: "You have successfully signed up.",
@@ -143,12 +140,27 @@ export const useAuth = () => {
     }
   };
 
-  const signOut = () => {
-    storeLogout();
-    toast({
-      title: "Signed out",
-      description: "You have been signed out successfully.",
-    });
+  const signOut = async () => {
+    try {
+      await apolloClient.mutate({
+        mutation: gql`
+          mutation Logout {
+            logout {
+              success
+              message
+            }
+          }
+        `,
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      storeLogout();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+    }
   };
 
   const signInWithGoogle = useGoogleLogin({
@@ -163,12 +175,8 @@ export const useAuth = () => {
           },
         });
 
-        if (
-          data?.loginWithGoogle?.success &&
-          data?.loginWithGoogle?.user &&
-          data?.loginWithGoogle?.token
-        ) {
-          storeLogin(data.loginWithGoogle.user, data.loginWithGoogle.token);
+        if (data?.loginWithGoogle?.success && data?.loginWithGoogle?.user) {
+          storeLogin(data.loginWithGoogle.user, null);
           toast({
             title: "Welcome!",
             description: "Successfully signed in with Google.",

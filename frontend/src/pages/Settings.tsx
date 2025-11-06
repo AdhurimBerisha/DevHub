@@ -89,7 +89,6 @@ export default function Settings() {
         description: message,
       });
 
-      // Refetch to get updated pendingEmail
       await client.refetchQueries({ include: [GET_CURRENT_USER] });
     } catch (err) {
       toast({
@@ -220,11 +219,13 @@ export default function Settings() {
                       Email Change Pending
                     </p>
                     <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                      A verification email has been sent to <strong>{data.currentUser.pendingEmail}</strong>.
-                      Please check your inbox to complete the email change.
+                      A verification email has been sent to{" "}
+                      <strong>{data.currentUser.pendingEmail}</strong>. Please
+                      check your inbox to complete the email change.
                     </p>
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                      Your current email: <strong>{data.currentUser.email}</strong>
+                      Your current email:{" "}
+                      <strong>{data.currentUser.email}</strong>
                     </p>
                   </div>
                 </div>
@@ -238,13 +239,19 @@ export default function Settings() {
                       await cancelEmailChange();
                       toast({
                         title: "Email change cancelled",
-                        description: "Your email change request has been cancelled.",
+                        description:
+                          "Your email change request has been cancelled.",
                       });
-                      await client.refetchQueries({ include: [GET_CURRENT_USER] });
+                      await client.refetchQueries({
+                        include: [GET_CURRENT_USER],
+                      });
                     } catch (err: unknown) {
                       toast({
                         title: "Error",
-                        description: err instanceof Error ? err.message : "Failed to cancel email change",
+                        description:
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to cancel email change",
                         variant: "destructive",
                       });
                     }
@@ -266,7 +273,8 @@ export default function Settings() {
                 />
                 {data?.currentUser?.pendingEmail && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Email change is pending. Cancel the current request to change it again.
+                    Email change is pending. Cancel the current request to
+                    change it again.
                   </p>
                 )}
               </div>

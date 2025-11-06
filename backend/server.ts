@@ -4,6 +4,7 @@ import { expressMiddleware } from "@as-integrations/express4";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import { createApolloServer } from "./config/apollo.js";
 import { prisma, connectDB } from "./config/database.js";
@@ -17,7 +18,6 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT) || 4001;
 
-// Allow your frontend origins
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
   : [
@@ -28,10 +28,8 @@ const allowedOrigins = process.env.FRONTEND_URL
 
 const corsOptions = cors<cors.CorsRequest>({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    // Remove trailing slashes for comparison
     const normalizedOrigin = origin.replace(/\/$/, "");
 
     if (
@@ -98,7 +96,6 @@ setupSocketHandlers(io, prisma);
 const startServer = async () => {
   await connectDB();
 
-  // Prevent email timeout from breaking deployment
   try {
     await emailService.testConnection();
     console.log("✅ Email service connected successfully");
@@ -108,9 +105,9 @@ const startServer = async () => {
 
   await server.start();
 
-  // Apply CORS globally to handle preflight requests
   app.use(corsOptions);
 
+  app.use(cookieParser());
   app.use(express.json());
   app.use(createAuthMiddleware(prisma));
 
@@ -119,10 +116,12 @@ const startServer = async () => {
   app.use(
     "/graphql",
     expressMiddleware(server, {
-      context: async ({ req }: { req: any }) => ({
+      context: async ({ req, res }: { req: any; res: any }) => ({
         prisma,
         user: req.user || null,
         io,
+        req,
+        res,
       }),
     })
   );
@@ -131,7 +130,6 @@ const startServer = async () => {
     res.json({ status: "OK", timestamp: new Date().toISOString() });
   });
 
-  // ✅ Important fix for Render
   await new Promise<void>((resolve) =>
     httpServer.listen(PORT, "0.0.0.0", resolve)
   );

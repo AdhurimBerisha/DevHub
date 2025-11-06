@@ -121,7 +121,8 @@ export const userResolver = {
           password: string;
           role?: string;
         };
-      }
+      },
+      context: { res: any }
     ) => {
       try {
         const emailValidation = validateEmail(input.email);
@@ -210,6 +211,14 @@ export const userResolver = {
 
         const token = generateToken(user.id, user.email, user.role);
 
+        context.res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message:
@@ -223,7 +232,7 @@ export const userResolver = {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
-          token,
+          token: null,
         };
       } catch (error) {
         console.error("Error creating user:", error);
@@ -290,7 +299,6 @@ export const userResolver = {
 
           const normalizedNewEmail = normalizeEmail(input.email);
 
-          // Get current user to check if email is actually changing
           const currentUser = await prisma.user.findUnique({
             where: { id },
             select: { email: true, username: true },
@@ -298,9 +306,7 @@ export const userResolver = {
 
           if (!currentUser) throw new Error("User not found");
 
-          // If email is actually changing, set up email change verification
           if (normalizedNewEmail !== currentUser.email) {
-            // Check if new email is already taken
             const emailExists = await prisma.user.findUnique({
               where: { email: normalizedNewEmail },
               select: { id: true },
@@ -310,17 +316,14 @@ export const userResolver = {
               throw new Error("Email is already in use");
             }
 
-            // Generate email change token
             const emailChangeToken = crypto.randomBytes(32).toString("hex");
             const tokenExpires = new Date();
-            tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours expiry
+            tokenExpires.setHours(tokenExpires.getHours() + 24);
 
-            // Store pending email and token
             updateData.pendingEmail = normalizedNewEmail;
             updateData.emailChangeToken = emailChangeToken;
             updateData.emailChangeTokenExpires = tokenExpires;
 
-            // Send verification email to new email address
             try {
               await emailService.sendEmailChangeVerificationEmail(
                 normalizedNewEmail,
@@ -333,10 +336,8 @@ export const userResolver = {
                 "Failed to send email change verification email:",
                 emailError
               );
-              // Don't throw - allow pending email to be set, user can resend
             }
 
-            // Send notification email to old email address
             try {
               await emailService.sendEmailChangeNotificationEmail(
                 currentUser.email,
@@ -348,10 +349,8 @@ export const userResolver = {
                 "Failed to send email change notification:",
                 emailError
               );
-              // Non-critical, continue
             }
           }
-          // If email is the same, don't do anything (no change needed)
         }
 
         if (input.username) {
@@ -391,7 +390,8 @@ export const userResolver = {
 
     login: async (
       _: unknown,
-      { input }: { input: { email: string; password: string } }
+      { input }: { input: { email: string; password: string } },
+      context: { user: any; res: any }
     ) => {
       try {
         const emailValidation = validateEmail(input.email);
@@ -464,6 +464,14 @@ export const userResolver = {
 
         const token = generateToken(user.id, user.email, user.role);
 
+        context.res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message: "Login successful",
@@ -476,7 +484,7 @@ export const userResolver = {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
-          token,
+          token: null,
         };
       } catch (error) {
         console.error("Error during login:", error);
@@ -489,7 +497,11 @@ export const userResolver = {
       }
     },
 
-    loginWithGoogle: async (_: unknown, { token }: { token: string }) => {
+    loginWithGoogle: async (
+      _: unknown,
+      { token }: { token: string },
+      context: { res: any }
+    ) => {
       try {
         const googleUser = await verifyGoogleToken(token);
 
@@ -617,6 +629,14 @@ export const userResolver = {
 
         const jwtToken = generateToken(user.id, user.email, user.role);
 
+        context.res.cookie("token", jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message: "Login successful",
@@ -629,7 +649,7 @@ export const userResolver = {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
-          token: jwtToken,
+          token: null,
         };
       } catch (error: any) {
         console.error("Error during Google login:", error);
@@ -663,7 +683,7 @@ export const userResolver = {
     verifyEmail: async (
       _: unknown,
       { token }: { token: string },
-      context: { user?: any }
+      context: { user?: any; res: any }
     ) => {
       try {
         const user = await prisma.user.findFirst({
@@ -708,11 +728,19 @@ export const userResolver = {
           updatedUser.role
         );
 
+        context.res.cookie("token", jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message: "Email verified successfully",
           user: updatedUser,
-          token: jwtToken,
+          token: null,
         };
       } catch (error: any) {
         console.error("Error verifying email:", error);
@@ -824,7 +852,6 @@ export const userResolver = {
           },
         });
 
-        // Don't reveal if user exists or not for security
         if (!user || user.authProvider !== "email") {
           return {
             success: true,
@@ -835,10 +862,9 @@ export const userResolver = {
           };
         }
 
-        // Generate reset token
         const resetToken = crypto.randomBytes(32).toString("hex");
         const tokenExpires = new Date();
-        tokenExpires.setHours(tokenExpires.getHours() + 1); // 1 hour expiry
+        tokenExpires.setHours(tokenExpires.getHours() + 1);
 
         await prisma.user.update({
           where: { id: user.id },
@@ -848,7 +874,6 @@ export const userResolver = {
           },
         });
 
-        // Send password reset email
         try {
           await emailService.sendPasswordResetEmail(
             user.email,
@@ -857,7 +882,6 @@ export const userResolver = {
           );
         } catch (emailError) {
           console.error("Failed to send password reset email:", emailError);
-          // Still return success to not reveal user existence
         }
 
         return {
@@ -881,7 +905,7 @@ export const userResolver = {
     resetPassword: async (
       _: unknown,
       { token, password }: { token: string; password: string },
-      context: { user?: any }
+      context: { user?: any; res: any }
     ) => {
       try {
         if (!validatePassword(password)) {
@@ -893,12 +917,11 @@ export const userResolver = {
           };
         }
 
-        // Find user by reset token
         const user = await prisma.user.findFirst({
           where: {
             passwordResetToken: token,
             passwordResetTokenExpires: {
-              gt: new Date(), // Token not expired
+              gt: new Date(),
             },
           },
         });
@@ -912,10 +935,8 @@ export const userResolver = {
           };
         }
 
-        // Hash new password
         const hashedPassword = await hashPassword(password);
 
-        // Update password and clear reset token
         const updatedUser = await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -934,18 +955,25 @@ export const userResolver = {
           },
         });
 
-        // Generate token for the user
         const jwtToken = generateToken(
           updatedUser.id,
           updatedUser.email,
           updatedUser.role
         );
 
+        context.res.cookie("token", jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message: "Password reset successfully",
           user: updatedUser,
-          token: jwtToken,
+          token: null,
         };
       } catch (error: any) {
         console.error("Error resetting password:", error);
@@ -961,15 +989,14 @@ export const userResolver = {
     verifyEmailChange: async (
       _: unknown,
       { token }: { token: string },
-      context: { user?: any }
+      context: { user?: any; res: any }
     ) => {
       try {
-        // Find user by email change token
         const user = await prisma.user.findFirst({
           where: {
             emailChangeToken: token,
             emailChangeTokenExpires: {
-              gt: new Date(), // Token not expired
+              gt: new Date(),
             },
           },
         });
@@ -983,7 +1010,6 @@ export const userResolver = {
           };
         }
 
-        // Check if pending email is already taken
         const emailExists = await prisma.user.findUnique({
           where: { email: user.pendingEmail },
           select: { id: true },
@@ -998,7 +1024,6 @@ export const userResolver = {
           };
         }
 
-        // Update email and clear pending email fields
         const updatedUser = await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -1006,7 +1031,7 @@ export const userResolver = {
             pendingEmail: null,
             emailChangeToken: null,
             emailChangeTokenExpires: null,
-            emailVerified: true, // New email is verified
+            emailVerified: true,
           },
           select: {
             id: true,
@@ -1020,18 +1045,25 @@ export const userResolver = {
           },
         });
 
-        // Generate token for the user
         const jwtToken = generateToken(
           updatedUser.id,
           updatedUser.email,
           updatedUser.role
         );
 
+        context.res.cookie("token", jwtToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+
         return {
           success: true,
           message: "Email changed successfully",
           user: updatedUser,
-          token: jwtToken,
+          token: null,
         };
       } catch (error: any) {
         console.error("Error verifying email change:", error);
@@ -1093,6 +1125,20 @@ export const userResolver = {
           token: null,
         };
       }
+    },
+
+    logout: async (_: unknown, __: unknown, context: { res: any }) => {
+      context.res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      });
+
+      return {
+        success: true,
+        message: "Logged out successfully",
+      };
     },
   },
 };

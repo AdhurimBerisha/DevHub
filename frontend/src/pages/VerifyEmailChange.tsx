@@ -34,7 +34,6 @@ export default function VerifyEmailChange() {
           setStatus("success");
           setMessage(data.verifyEmailChange.message);
 
-          // Store user and token if provided
           if (data.verifyEmailChange.user && data.verifyEmailChange.token) {
             setUser(data.verifyEmailChange.user);
             setToken(data.verifyEmailChange.token);
@@ -49,14 +48,17 @@ export default function VerifyEmailChange() {
         } else {
           setStatus("error");
           setMessage(
-            data?.verifyEmailChange?.message || "Email change verification failed"
+            data?.verifyEmailChange?.message ||
+              "Email change verification failed"
           );
         }
       })
       .catch((error: unknown) => {
         setStatus("error");
         setMessage(
-          error instanceof Error ? error.message : "Email change verification failed"
+          error instanceof Error
+            ? error.message
+            : "Email change verification failed"
         );
       });
   }, [token, verifyEmailChange, navigate, setToken, setUser, toast]);
@@ -73,7 +75,9 @@ export default function VerifyEmailChange() {
           {status === "loading" && (
             <>
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-              <p className="text-muted-foreground">Verifying your new email...</p>
+              <p className="text-muted-foreground">
+                Verifying your new email...
+              </p>
             </>
           )}
           {status === "success" && (
@@ -90,10 +94,18 @@ export default function VerifyEmailChange() {
               <XCircle className="h-12 w-12 mx-auto text-red-500" />
               <p className="text-red-600 font-medium">{message}</p>
               <div className="space-y-2 pt-4">
-                <Button onClick={() => navigate("/settings")} variant="outline" className="w-full">
+                <Button
+                  onClick={() => navigate("/settings")}
+                  variant="outline"
+                  className="w-full"
+                >
                   Go to Settings
                 </Button>
-                <Button onClick={() => navigate("/")} variant="ghost" className="w-full">
+                <Button
+                  onClick={() => navigate("/")}
+                  variant="ghost"
+                  className="w-full"
+                >
                   Go to Home
                 </Button>
               </div>
@@ -104,4 +116,3 @@ export default function VerifyEmailChange() {
     </div>
   );
 }
-

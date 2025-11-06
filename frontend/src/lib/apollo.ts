@@ -14,15 +14,13 @@ const GRAPHQL_URL =
 
 const httpLink = createHttpLink({
   uri: GRAPHQL_URL,
+  credentials: "include",
 });
 
 const authLink = setContext((_, { headers }) => {
-  const token = useAuthStore.getState().token;
-
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : "",
     },
   };
 });

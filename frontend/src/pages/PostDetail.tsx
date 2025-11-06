@@ -72,7 +72,6 @@ export default function PostDetail() {
     setReplyingTo,
   } = usePostStore();
 
-  // State for editing comments
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState<string>("");
 

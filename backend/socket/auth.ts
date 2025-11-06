@@ -7,6 +7,7 @@ export function createSocketAuthMiddleware(prisma: PrismaClient) {
     try {
       const token =
         socket.handshake.auth?.token ||
+        socket.handshake.headers.cookie?.split("token=")[1]?.split(";")[0] ||
         socket.handshake.headers?.authorization?.split(" ")[1];
 
       if (!token) {

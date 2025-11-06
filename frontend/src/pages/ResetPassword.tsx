@@ -16,8 +16,10 @@ export default function ResetPassword() {
   const token = searchParams.get("token");
   const { setToken, setUser } = useAuthStore();
   const { toast } = useToast();
-  
-  const [status, setStatus] = useState<"loading" | "success" | "error" | "form">("loading");
+
+  const [status, setStatus] = useState<
+    "loading" | "success" | "error" | "form"
+  >("loading");
   const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -77,34 +79,36 @@ export default function ResetPassword() {
       if (data?.resetPassword?.success) {
         setStatus("success");
         setMessage(data.resetPassword.message);
-        
-        // Store user and token if provided
+
         if (data.resetPassword.user && data.resetPassword.token) {
           setUser(data.resetPassword.user);
           setToken(data.resetPassword.token);
         }
-        
+
         toast({
           title: "Password reset successful",
           description: "Your password has been reset successfully",
         });
-        
+
         setTimeout(() => navigate("/"), 3000);
       } else {
         setStatus("error");
         setMessage(data?.resetPassword?.message || "Failed to reset password");
         toast({
           title: "Error",
-          description: data?.resetPassword?.message || "Failed to reset password",
+          description:
+            data?.resetPassword?.message || "Failed to reset password",
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to reset password";
       setStatus("error");
-      setMessage(error.message || "Failed to reset password");
+      setMessage(errorMessage);
       toast({
         title: "Error",
-        description: error.message || "Failed to reset password",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -123,7 +127,7 @@ export default function ResetPassword() {
               <p className="text-muted-foreground">Validating reset token...</p>
             </>
           )}
-          
+
           {status === "success" && (
             <>
               <CheckCircle className="h-12 w-12 mx-auto text-green-500" />
@@ -133,17 +137,21 @@ export default function ResetPassword() {
               </p>
             </>
           )}
-          
+
           {status === "error" && (
             <>
               <XCircle className="h-12 w-12 mx-auto text-red-500" />
               <p className="text-red-600 font-medium">{message}</p>
-              <Button onClick={() => navigate("/auth")} variant="outline" className="w-full mt-4">
+              <Button
+                onClick={() => navigate("/auth")}
+                variant="outline"
+                className="w-full mt-4"
+              >
                 Go to Login
               </Button>
             </>
           )}
-          
+
           {status === "form" && (
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
               <div className="space-y-2">
@@ -203,4 +211,3 @@ export default function ResetPassword() {
     </div>
   );
 }
-

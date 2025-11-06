@@ -47,15 +47,15 @@ export const userTypeDefs = gql`
     deleteUser(id: ID!): Boolean!
     login(input: LoginInput!): LoginResponse!
     loginWithGoogle(token: String!): LoginResponse!
-    
+
     # Email verification
     verifyEmail(token: String!): AuthResponse!
     resendVerificationEmail: AuthResponse!
-    
+
     # Password reset
     forgotPassword(email: String!): AuthResponse!
     resetPassword(token: String!, password: String!): AuthResponse!
-    
+
     # Email change
     verifyEmailChange(token: String!): AuthResponse!
     cancelEmailChange: AuthResponse!
@@ -67,6 +67,7 @@ export const userTypeDefs = gql`
       status: FriendshipStatus!
     ): Friendship!
     removeFriend(friendshipId: ID!): Boolean!
+    logout: LogoutResponse!
   }
 
   type User {
@@ -131,5 +132,10 @@ export const userTypeDefs = gql`
     message: String!
     user: User
     token: String
+  }
+
+  type LogoutResponse {
+    success: Boolean!
+    message: String!
   }
 `;

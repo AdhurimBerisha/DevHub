@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthStore>()(
       login: (user, token) => {
         set({
           user,
-          token,
+          token: null,
           isAuthenticated: true,
           isAdmin: user.role === "ADMIN",
           isLoading: false,
@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthStore>()(
       name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
+
         isAuthenticated: state.isAuthenticated,
         isAdmin: state.isAdmin,
       }),
