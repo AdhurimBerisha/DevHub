@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { useAuthStore } from "@/stores/authStore";
 
 interface Notification {
   id: string;
@@ -74,10 +75,11 @@ export function NotificationsDropdown() {
   const { toast } = useToast();
   const { open: sidebarOpen } = useSidebar();
   const [isOpen, setIsOpen] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const { data, loading, refetch } = useQuery(GET_NOTIFICATIONS_QUERY, {
     variables: { limit: 20, offset: 0 },
-    skip: !isOpen,
+    skip: !isOpen || !isAuthenticated,
     fetchPolicy: "cache-and-network",
   });
 
@@ -86,6 +88,7 @@ export function NotificationsDropdown() {
     {
       pollInterval: 10000,
       fetchPolicy: "cache-and-network",
+      skip: !isAuthenticated,
     }
   );
 
