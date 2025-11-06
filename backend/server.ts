@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 
 import { createApolloServer } from "./config/apollo.js";
 import { prisma, connectDB } from "./config/database.js";
@@ -104,6 +105,40 @@ const startServer = async () => {
   }
 
   await server.start();
+
+  const isProduction = process.env.NODE_ENV === "production";
+  const websocketOrigins = allowedOrigins.flatMap((origin) => {
+    if (origin.startsWith("http")) {
+      const wsVariant = origin.replace(/^http/, "ws");
+      return [origin, wsVariant];
+    }
+    return [origin];
+  });
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              baseUri: ["'self'"],
+              connectSrc: ["'self'", ...websocketOrigins],
+              fontSrc: ["'self'", "https:", "data:"],
+              frameAncestors: ["'self'"],
+              imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+              objectSrc: ["'none'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", "https:"],
+              styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+              upgradeInsecureRequests: [],
+            },
+          }
+        : false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginEmbedderPolicy: false,
+      referrerPolicy: { policy: "no-referrer" },
+      hsts: isProduction,
+    })
+  );
 
   app.use(corsOptions);
 
