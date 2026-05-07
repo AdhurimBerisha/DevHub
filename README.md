@@ -1,6 +1,6 @@
 # DevHub — Explore Different Blogs
 
-Live Demo - https://dev-hub-sandy.vercel.app/
+Live Demo 👉 [DevHub Live Demo](https://dev-hub-sandy.vercel.app/)
 
 ![DevHub Logo](DevHub.png)
 
