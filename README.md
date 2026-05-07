@@ -1,5 +1,7 @@
 # DevHub — Explore Different Blogs
 
+Live Demo - https://dev-hub-sandy.vercel.app/
+
 ![DevHub Logo](DevHub.png)
 
 A full-stack developer community platform for sharing knowledge, discussing technologies, and connecting with fellow developers. Similar to Reddit or Dev.to, DevHub enables developers to create posts, share tutorials, ask questions, showcase projects, and engage with the community through comments, votes, and real-time messaging
